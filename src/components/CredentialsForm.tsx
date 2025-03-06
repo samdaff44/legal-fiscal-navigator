@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from "@/components/ui/use-toast";
@@ -31,9 +30,9 @@ interface Credentials {
 }
 
 const DATABASE_NAMES = {
-  database1: "LexisNexis",
-  database2: "Westlaw",
-  database3: "DataFiscal"
+  database1: "Lexis Nexis",
+  database2: "Dalloz",
+  database3: "EFL Francis Lefebvre"
 };
 
 const CredentialsForm = () => {

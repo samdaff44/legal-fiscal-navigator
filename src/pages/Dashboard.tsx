@@ -68,7 +68,7 @@ const Dashboard = () => {
               Recherchez dans vos bases juridiques et fiscales
             </h1>
             <p className="text-muted-foreground text-lg mb-12 max-w-3xl mx-auto">
-              Notre système recherche simultanément dans LexisNexis, Westlaw et DataFiscal
+              Notre système recherche simultanément dans Lexis Nexis, Dalloz et EFL Francis Lefebvre
               pour vous fournir les résultats les plus pertinents.
             </p>
             

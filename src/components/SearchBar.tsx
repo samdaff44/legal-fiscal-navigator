@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -32,7 +31,6 @@ const SearchBar = () => {
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   useEffect(() => {
-    // Load search history from localStorage
     const savedHistory = localStorage.getItem('searchHistory');
     if (savedHistory) {
       setSearchHistory(JSON.parse(savedHistory));
@@ -70,7 +68,6 @@ const SearchBar = () => {
 
     setIsSearching(true);
 
-    // Save to search history
     const newHistory = [
       { query: query.trim(), timestamp: Date.now() },
       ...searchHistory.filter(item => item.query !== query.trim()).slice(0, 4)
@@ -79,7 +76,6 @@ const SearchBar = () => {
     setSearchHistory(newHistory);
     localStorage.setItem('searchHistory', JSON.stringify(newHistory));
 
-    // Simulate search delay
     setTimeout(() => {
       setIsSearching(false);
       navigate('/results', { state: { query } });
@@ -159,7 +155,6 @@ const SearchBar = () => {
         </div>
       </form>
 
-      {/* Search history dropdown */}
       {showSearchHistory && searchHistory.length > 0 && (
         <div className="absolute z-10 w-full mt-1 bg-card border rounded-md shadow-md animate-fade-in">
           <div className="p-2 border-b">
@@ -198,12 +193,11 @@ const SearchBar = () => {
         </div>
       )}
 
-      {/* Database selection buttons */}
       <div className="flex flex-wrap justify-center mt-6 gap-3">
         <DatabaseButton icon={<Database />} name="Toutes les bases" />
-        <DatabaseButton icon={<BookOpen />} name="LexisNexis" />
-        <DatabaseButton icon={<FileText />} name="Westlaw" />
-        <DatabaseButton icon={<Database />} name="DataFiscal" />
+        <DatabaseButton icon={<BookOpen />} name="Lexis Nexis" />
+        <DatabaseButton icon={<FileText />} name="Dalloz" />
+        <DatabaseButton icon={<Database />} name="EFL Francis Lefebvre" />
       </div>
     </div>
   );

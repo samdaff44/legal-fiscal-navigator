@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
@@ -34,9 +33,9 @@ interface Credentials {
 }
 
 const DATABASE_NAMES = {
-  database1: "LexisNexis",
-  database2: "Westlaw",
-  database3: "DataFiscal"
+  database1: "Lexis Nexis",
+  database2: "Dalloz",
+  database3: "EFL Francis Lefebvre"
 };
 
 const Settings = () => {
@@ -57,12 +56,10 @@ const Settings = () => {
   });
 
   useEffect(() => {
-    // Load credentials
     const savedCredentials = localStorage.getItem('databaseCredentials');
     if (savedCredentials) {
       setCredentials(JSON.parse(savedCredentials));
     } else {
-      // Redirect if no credentials are found
       navigate('/');
     }
   }, [navigate]);
@@ -94,7 +91,6 @@ const Settings = () => {
   const saveCredentials = () => {
     setIsSaving(true);
     
-    // Simulate API call
     setTimeout(() => {
       localStorage.setItem('databaseCredentials', JSON.stringify(credentials));
       
@@ -387,7 +383,6 @@ const Settings = () => {
   );
 };
 
-// Add a simple Upload icon component since it's not imported from lucide-react
 const Upload = (props: any) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
