@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -18,7 +17,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Calendar as CalendarIcon, Filter, BookOpen, Database, FileText, GitBranch, User, Globe, BookMarked, Languages, Award, Citation, HelpCircle } from 'lucide-react';
+import { Calendar as CalendarIcon, Filter, BookOpen, Database, FileText, GitBranch, User, Globe, BookMarked, Languages, Award, Bookmark, HelpCircle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
