@@ -34,34 +34,34 @@ const Index = () => {
     <div className="min-h-screen flex flex-col">
       <Header />
       
-      <main className="flex-grow flex flex-col items-center justify-center px-4 py-16 md:py-24">
+      <main className="flex-grow flex flex-col items-center justify-center px-4 pt-24 pb-16">
         <div 
-          className={`text-center max-w-3xl mx-auto transition-all duration-1000 ${
+          className={`text-center max-w-4xl mx-auto transition-all duration-1000 ${
             showAnimation ? 'opacity-0 transform translate-y-10' : 'opacity-100 transform translate-y-0'
           }`}
         >
-          <div className="flex justify-center mb-8">
-            <div className="relative w-20 h-20">
-              <div className="absolute inset-0 bg-primary rounded-xl opacity-20 animate-pulse"></div>
-              <div className="absolute inset-2 bg-white rounded-lg shadow-inner"></div>
-              <div className="absolute inset-4 bg-primary rounded-md flex items-center justify-center">
-                <Database className="w-8 h-8 text-white" />
+          <div className="flex justify-center mb-12 relative">
+            <div className="relative w-24 h-24 animate-float">
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-primary/10 rounded-2xl rotate-6"></div>
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-primary/10 rounded-2xl -rotate-3"></div>
+              <div className="absolute inset-0 bg-card rounded-xl shadow-soft flex items-center justify-center">
+                <Database className="w-12 h-12 text-primary" />
               </div>
             </div>
           </div>
           
-          <h1 className="text-4xl font-bold tracking-tight sm:text-5xl mb-6">
+          <h1 className="squarespace-heading text-4xl md:text-6xl font-light tracking-tight mb-6">
             LegalFiscal Navigator
           </h1>
           
-          <p className="text-xl text-muted-foreground mb-12 max-w-2xl mx-auto">
+          <p className="text-xl text-muted-foreground mb-16 max-w-2xl mx-auto font-light leading-relaxed">
             Votre interface unifiée pour des recherches juridiques et fiscales avancées
             sur les bases de données professionnelles.
           </p>
 
-          <div className="flex flex-col space-y-4 sm:flex-row sm:space-y-0 sm:space-x-4 justify-center mb-12">
+          <div className="flex flex-col space-y-4 sm:flex-row sm:space-y-0 sm:space-x-4 justify-center mb-20">
             {hasCredentials ? (
-              <Button size="lg" onClick={handleContinue} className="group">
+              <Button size="lg" onClick={handleContinue} className="group px-8 py-6 text-base">
                 <span>Continuer vers le dashboard</span>
                 <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Button>
@@ -72,11 +72,11 @@ const Index = () => {
             )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-10 mb-16">
             <FeatureCard 
               icon={<Search className="h-10 w-10 text-primary" />}
               title="Recherche unifiée"
-              description="Interrogez simultanément les bases LexisNexis, Westlaw et DataFiscal."
+              description="Interrogez simultanément les bases LexisNexis, Dalloz et EFL Francis Lefebvre."
             />
             <FeatureCard 
               icon={<Database className="h-10 w-10 text-primary" />}
@@ -92,7 +92,7 @@ const Index = () => {
         </div>
 
         {!hasCredentials && (
-          <div className={`w-full max-w-lg mx-auto transition-all duration-1000 ${
+          <div className={`w-full max-w-md mx-auto transition-all duration-1000 ${
             showAnimation ? 'opacity-0 transform translate-y-10' : 'opacity-100 transform translate-y-0'
           }`}>
             <CredentialsForm />
@@ -100,7 +100,7 @@ const Index = () => {
         )}
       </main>
       
-      <footer className="border-t py-6 bg-secondary/50">
+      <footer className="py-10 bg-secondary/30">
         <div className="container flex flex-col items-center justify-between gap-4 md:flex-row">
           <p className="text-center text-sm text-muted-foreground md:text-left">
             © 2023 LegalFiscal Navigator. Tous droits réservés.
@@ -120,9 +120,9 @@ const FeatureCard = ({ icon, title, description }: {
   description: string 
 }) => {
   return (
-    <div className="flex flex-col items-center text-center p-6 rounded-lg bg-card shadow-soft animate-blur-in">
-      <div className="mb-4">{icon}</div>
-      <h3 className="text-lg font-medium mb-2">{title}</h3>
+    <div className="flex flex-col items-center text-center p-8 rounded-lg squarespace-card">
+      <div className="mb-6 p-4 bg-primary/5 rounded-full">{icon}</div>
+      <h3 className="text-xl font-medium mb-3">{title}</h3>
       <p className="text-muted-foreground">{description}</p>
     </div>
   );
