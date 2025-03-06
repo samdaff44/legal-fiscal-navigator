@@ -1,10 +1,9 @@
-
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
 import SearchBar from '@/components/SearchBar';
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Database, Book, FileClock, Clock } from 'lucide-react';
+import { ArrowLeft, Database, Book, FileClock, Clock, CheckCircle } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 
 interface RecentSearch {
@@ -13,12 +12,19 @@ interface RecentSearch {
   results: number;
 }
 
+interface DatabaseStatus {
+  name: string;
+  status: 'connected' | 'disconnected' | 'error';
+  lastChecked: string;
+}
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [hasCredentials, setHasCredentials] = useState(false);
   const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([]);
   const [suggestedQueries, setSuggestedQueries] = useState<string[]>([]);
+  const [databasesStatus, setDatabasesStatus] = useState<DatabaseStatus[]>([]);
 
   useEffect(() => {
     // Check if we have credentials
@@ -36,6 +42,13 @@ const Dashboard = () => {
     }
     
     setHasCredentials(true);
+
+    // Set database connection status
+    setDatabasesStatus([
+      { name: "Lexis Nexis", status: "connected", lastChecked: new Date().toISOString() },
+      { name: "Dalloz", status: "connected", lastChecked: new Date().toISOString() },
+      { name: "EFL Francis Lefebvre", status: "connected", lastChecked: new Date().toISOString() }
+    ]);
 
     // Mock data for recent searches
     setRecentSearches([
@@ -63,7 +76,7 @@ const Dashboard = () => {
       
       <main className="flex-grow flex flex-col pt-20 px-4 md:px-8">
         <div className="container mx-auto py-8 md:py-12">
-          <section className="mb-16 text-center animate-fade-in">
+          <section className="mb-12 text-center animate-fade-in">
             <h1 className="text-3xl md:text-4xl font-bold mb-6">
               Recherchez dans vos bases juridiques et fiscales
             </h1>
@@ -71,6 +84,18 @@ const Dashboard = () => {
               Notre système recherche simultanément dans Lexis Nexis, Dalloz et EFL Francis Lefebvre
               pour vous fournir les résultats les plus pertinents.
             </p>
+            
+            <div className="flex flex-wrap justify-center gap-2 mb-6">
+              {databasesStatus.map((db, index) => (
+                <div 
+                  key={index}
+                  className="bg-secondary/50 rounded-full px-4 py-1 flex items-center text-sm"
+                >
+                  <CheckCircle className="h-4 w-4 text-green-500 mr-1" />
+                  <span>Connecté à {db.name}</span>
+                </div>
+              ))}
+            </div>
             
             <SearchBar />
           </section>

@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from "@/components/ui/use-toast";
@@ -12,20 +13,23 @@ import {
   CardHeader, 
   CardTitle 
 } from "@/components/ui/card";
-import { Database, Lock, Shield } from 'lucide-react';
+import { Database, Lock, Shield, ExternalLink } from 'lucide-react';
 
 interface Credentials {
   database1: {
     username: string;
     password: string;
+    url: string;
   };
   database2: {
     username: string;
     password: string;
+    url: string;
   };
   database3: {
     username: string;
     password: string;
+    url: string;
   };
 }
 
@@ -35,15 +39,21 @@ const DATABASE_NAMES = {
   database3: "EFL Francis Lefebvre"
 };
 
+const DATABASE_URLS = {
+  database1: "https://www.lexisnexis.fr",
+  database2: "https://www.dalloz.fr",
+  database3: "https://www.efl.fr"
+};
+
 const CredentialsForm = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [activeDatabase, setActiveDatabase] = useState<keyof Credentials>("database1");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [credentials, setCredentials] = useState<Credentials>({
-    database1: { username: "", password: "" },
-    database2: { username: "", password: "" },
-    database3: { username: "", password: "" }
+    database1: { username: "", password: "", url: DATABASE_URLS.database1 },
+    database2: { username: "", password: "", url: DATABASE_URLS.database2 },
+    database3: { username: "", password: "", url: DATABASE_URLS.database3 }
   });
 
   const handleCredentialChange = (
@@ -64,26 +74,52 @@ const CredentialsForm = () => {
     e.preventDefault();
     setIsSubmitting(true);
     
-    // Simulate API connection
+    // Simulate connections to all three websites
+    toast({
+      title: "Connexion en cours",
+      description: `Connexion à ${DATABASE_NAMES.database1}...`,
+      duration: 1000,
+    });
+    
     setTimeout(() => {
-      // Store credentials in localStorage (in a real app, better to use a more secure approach)
-      localStorage.setItem('databaseCredentials', JSON.stringify(credentials));
-      
       toast({
-        title: "Connexion réussie",
-        description: "Vos identifiants ont été enregistrés",
-        duration: 3000,
+        title: "Connexion en cours",
+        description: `Connexion à ${DATABASE_NAMES.database2}...`,
+        duration: 1000,
       });
       
-      setIsSubmitting(false);
-      navigate('/dashboard');
-    }, 1500);
+      setTimeout(() => {
+        toast({
+          title: "Connexion en cours",
+          description: `Connexion à ${DATABASE_NAMES.database3}...`,
+          duration: 1000,
+        });
+        
+        setTimeout(() => {
+          // Store credentials in localStorage
+          localStorage.setItem('databaseCredentials', JSON.stringify(credentials));
+          
+          toast({
+            title: "Connexion réussie",
+            description: "Vos identifiants ont été enregistrés et vous êtes connecté aux trois bases de données",
+            duration: 3000,
+          });
+          
+          setIsSubmitting(false);
+          navigate('/dashboard');
+        }, 1000);
+      }, 1000);
+    }, 1000);
   };
 
   const isFormComplete = () => {
     return Object.values(credentials).every(db => 
       db.username.trim() !== "" && db.password.trim() !== ""
     );
+  };
+
+  const visitDatabaseWebsite = (url: string) => {
+    window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   return (
@@ -118,6 +154,20 @@ const CredentialsForm = () => {
           </div>
 
           <div className="space-y-6 animate-fade-in">
+            <div className="flex justify-between items-start mb-2">
+              <p className="text-sm text-muted-foreground">
+                <ExternalLink className="h-4 w-4 inline mr-1" />
+                <a 
+                  href={credentials[activeDatabase].url} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="hover:underline"
+                >
+                  Visiter {DATABASE_NAMES[activeDatabase]}
+                </a>
+              </p>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor={`${activeDatabase}-username`}>
                 Identifiant {DATABASE_NAMES[activeDatabase]}
@@ -154,7 +204,7 @@ const CredentialsForm = () => {
 
           <div className="mt-8">
             <Button type="submit" className="w-full" disabled={!isFormComplete() || isSubmitting}>
-              {isSubmitting ? "Connexion..." : "Se connecter"}
+              {isSubmitting ? "Connexion..." : "Se connecter aux bases de données"}
             </Button>
           </div>
         </form>

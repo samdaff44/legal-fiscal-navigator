@@ -20,6 +20,13 @@ interface SearchHistory {
   timestamp: number;
 }
 
+const DATABASE_NAMES = [
+  { name: "Toutes les bases", icon: <Database className="h-4 w-4" /> },
+  { name: "Lexis Nexis", icon: <BookOpen className="h-4 w-4" /> },
+  { name: "Dalloz", icon: <FileText className="h-4 w-4" /> },
+  { name: "EFL Francis Lefebvre", icon: <Database className="h-4 w-4" /> }
+];
+
 const SearchBar = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -29,6 +36,7 @@ const SearchBar = () => {
   const [showSearchHistory, setShowSearchHistory] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [selectedDatabases, setSelectedDatabases] = useState<string[]>(["Toutes les bases"]);
 
   useEffect(() => {
     const savedHistory = localStorage.getItem('searchHistory');
@@ -66,6 +74,18 @@ const SearchBar = () => {
       return;
     }
 
+    const credentials = localStorage.getItem('databaseCredentials');
+    if (!credentials) {
+      toast({
+        title: "Connexion requise",
+        description: "Veuillez d'abord vous connecter aux bases de données",
+        variant: "destructive",
+        duration: 3000,
+      });
+      navigate('/');
+      return;
+    }
+
     setIsSearching(true);
 
     const newHistory = [
@@ -76,9 +96,26 @@ const SearchBar = () => {
     setSearchHistory(newHistory);
     localStorage.setItem('searchHistory', JSON.stringify(newHistory));
 
+    const dbMessage = selectedDatabases.includes("Toutes les bases") 
+      ? "Recherche sur les trois bases de données..."
+      : `Recherche sur ${selectedDatabases.join(", ")}...`;
+    
+    toast({
+      title: "Recherche en cours",
+      description: dbMessage,
+      duration: 2000,
+    });
+
     setTimeout(() => {
       setIsSearching(false);
-      navigate('/results', { state: { query } });
+      navigate('/results', { 
+        state: { 
+          query,
+          databases: selectedDatabases.includes("Toutes les bases") 
+            ? ["Lexis Nexis", "Dalloz", "EFL Francis Lefebvre"]
+            : selectedDatabases
+        } 
+      });
     }, 1000);
   };
 
@@ -94,6 +131,25 @@ const SearchBar = () => {
     setQuery('');
     if (searchInputRef.current) {
       searchInputRef.current.focus();
+    }
+  };
+
+  const toggleDatabase = (dbName: string) => {
+    if (dbName === "Toutes les bases") {
+      setSelectedDatabases(["Toutes les bases"]);
+      return;
+    }
+    
+    const newSelection = selectedDatabases.filter(db => db !== "Toutes les bases");
+    
+    if (newSelection.includes(dbName)) {
+      if (newSelection.length === 1) {
+        setSelectedDatabases(["Toutes les bases"]);
+      } else {
+        setSelectedDatabases(newSelection.filter(db => db !== dbName));
+      }
+    } else {
+      setSelectedDatabases([...newSelection, dbName]);
     }
   };
 
@@ -194,27 +250,37 @@ const SearchBar = () => {
       )}
 
       <div className="flex flex-wrap justify-center mt-6 gap-3">
-        <DatabaseButton icon={<Database />} name="Toutes les bases" />
-        <DatabaseButton icon={<BookOpen />} name="Lexis Nexis" />
-        <DatabaseButton icon={<FileText />} name="Dalloz" />
-        <DatabaseButton icon={<Database />} name="EFL Francis Lefebvre" />
+        {DATABASE_NAMES.map((db, index) => (
+          <DatabaseButton 
+            key={index} 
+            icon={db.icon} 
+            name={db.name} 
+            isActive={selectedDatabases.includes(db.name)}
+            onClick={() => toggleDatabase(db.name)}
+          />
+        ))}
       </div>
     </div>
   );
 };
 
-const DatabaseButton = ({ icon, name }: { icon: React.ReactNode; name: string }) => {
-  const [active, setActive] = useState(name === "Toutes les bases");
-  
+interface DatabaseButtonProps {
+  icon: React.ReactNode;
+  name: string;
+  isActive: boolean;
+  onClick: () => void;
+}
+
+const DatabaseButton = ({ icon, name, isActive, onClick }: DatabaseButtonProps) => {
   return (
     <Button
-      variant={active ? "default" : "outline"}
+      variant={isActive ? "default" : "outline"}
       className={`rounded-full transition-all duration-300 ${
-        active 
+        isActive 
           ? 'bg-primary text-primary-foreground shadow-md' 
           : 'bg-background hover:bg-accent'
       }`}
-      onClick={() => setActive(!active)}
+      onClick={onClick}
     >
       <span className="flex items-center">
         <span className="mr-2">{icon}</span>

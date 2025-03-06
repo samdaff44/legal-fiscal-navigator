@@ -1,17 +1,17 @@
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Download, BookOpen, FileText, Database, Check, Copy, ExternalLink } from 'lucide-react';
+import { searchAllDatabases, filterResults } from '@/services/searchService';
 
 interface ResultItem {
   id: string;
   title: string;
   excerpt: string;
-  source: 'LexisNexis' | 'Westlaw' | 'DataFiscal';
+  source: 'Lexis Nexis' | 'Dalloz' | 'EFL Francis Lefebvre';
   type: 'jurisprudence' | 'doctrine' | 'legislation' | 'article';
   date: string;
   url: string;
@@ -22,32 +22,55 @@ interface ResultsDisplayProps {
   query: string;
 }
 
-// Mock data generator
-const generateMockResults = (query: string): ResultItem[] => {
-  const sources = ['LexisNexis', 'Westlaw', 'DataFiscal'] as const;
-  const types = ['jurisprudence', 'doctrine', 'legislation', 'article'] as const;
-  
-  return Array.from({ length: 15 }, (_, i) => ({
-    id: `result-${i + 1}`,
-    title: `${i % 3 === 0 ? 'Arrêt' : i % 3 === 1 ? 'Article sur' : 'Texte concernant'} ${query} ${i + 1}`,
-    excerpt: `Ce document traite de "${query}" dans le contexte fiscal et juridique. Il aborde les questions essentielles concernant l'application des dispositions légales et les implications pratiques pour les professionnels.`,
-    source: sources[i % sources.length],
-    type: types[i % types.length],
-    date: `${2010 + (i % 13)}-${String(1 + (i % 12)).padStart(2, '0')}-${String(1 + (i % 28)).padStart(2, '0')}`,
-    url: `https://example.com/document/${i + 1}`,
-    relevance: Math.round(95 - (i * 3.5))
-  }));
-};
-
 const ResultsDisplay = ({ query }: ResultsDisplayProps) => {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('all');
-  const [results] = useState<ResultItem[]>(generateMockResults(query));
+  const [results, setResults] = useState<ResultItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [expandedResult, setExpandedResult] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchResults = async () => {
+      setIsLoading(true);
+      setError(null);
+      
+      try {
+        toast({
+          title: "Recherche en cours",
+          description: "Interrogation des trois bases de données...",
+          duration: 3000,
+        });
+        
+        const searchResults = await searchAllDatabases({ query });
+        setResults(searchResults);
+        
+        toast({
+          title: "Recherche terminée",
+          description: `${searchResults.length} résultats trouvés sur les trois bases de données`,
+          duration: 3000,
+        });
+      } catch (err) {
+        console.error('Search error:', err);
+        setError(err instanceof Error ? err.message : "Une erreur est survenue lors de la recherche");
+        
+        toast({
+          title: "Erreur de recherche",
+          description: err instanceof Error ? err.message : "Une erreur est survenue lors de la recherche",
+          variant: "destructive",
+          duration: 5000,
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchResults();
+  }, [query, toast]);
 
   const filteredResults = activeTab === 'all' 
     ? results 
-    : results.filter(result => result.source.toLowerCase() === activeTab);
+    : results.filter(result => result.source.toLowerCase().replace(/\s/g, '') === activeTab);
 
   const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -64,11 +87,11 @@ const ResultsDisplay = ({ query }: ResultsDisplayProps) => {
 
   const getIconForSource = (source: string) => {
     switch (source) {
-      case 'LexisNexis':
+      case 'Lexis Nexis':
         return <BookOpen className="h-4 w-4" />;
-      case 'Westlaw':
+      case 'Dalloz':
         return <FileText className="h-4 w-4" />;
-      case 'DataFiscal':
+      case 'EFL Francis Lefebvre':
         return <Database className="h-4 w-4" />;
       default:
         return null;
@@ -90,14 +113,60 @@ const ResultsDisplay = ({ query }: ResultsDisplayProps) => {
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="py-12 text-center">
+        <div className="animate-pulse flex flex-col items-center">
+          <div className="h-8 w-1/3 bg-muted rounded mb-4"></div>
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="w-full max-w-3xl mb-4">
+              <div className="h-40 bg-muted rounded-lg"></div>
+            </div>
+          ))}
+        </div>
+        <p className="text-muted-foreground mt-6">Recherche en cours sur les trois bases de données...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="py-12 text-center">
+        <div className="bg-destructive/10 p-6 rounded-lg max-w-xl mx-auto">
+          <h3 className="text-lg font-medium text-destructive mb-2">Erreur de recherche</h3>
+          <p className="text-muted-foreground">{error}</p>
+          <Button className="mt-4" variant="outline" onClick={() => window.location.reload()}>
+            Réessayer
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (results.length === 0) {
+    return (
+      <div className="py-12 text-center">
+        <div className="bg-accent/30 p-6 rounded-lg max-w-xl mx-auto">
+          <h3 className="text-lg font-medium mb-2">Aucun résultat trouvé</h3>
+          <p className="text-muted-foreground">
+            Aucun résultat ne correspond à votre recherche "{query}" dans les trois bases de données.
+          </p>
+          <Button className="mt-4" variant="outline" onClick={() => window.history.back()}>
+            Retour
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 animate-fade-in">
       <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid grid-cols-4 mb-6">
           <TabsTrigger value="all">Tous ({results.length})</TabsTrigger>
-          <TabsTrigger value="lexisnexis">LexisNexis ({results.filter(r => r.source === 'LexisNexis').length})</TabsTrigger>
-          <TabsTrigger value="westlaw">Westlaw ({results.filter(r => r.source === 'Westlaw').length})</TabsTrigger>
-          <TabsTrigger value="datafiscal">DataFiscal ({results.filter(r => r.source === 'DataFiscal').length})</TabsTrigger>
+          <TabsTrigger value="lexisnexis">Lexis Nexis ({results.filter(r => r.source === 'Lexis Nexis').length})</TabsTrigger>
+          <TabsTrigger value="dalloz">Dalloz ({results.filter(r => r.source === 'Dalloz').length})</TabsTrigger>
+          <TabsTrigger value="eflfrancislefebvre">EFL Francis Lefebvre ({results.filter(r => r.source === 'EFL Francis Lefebvre').length})</TabsTrigger>
         </TabsList>
 
         <TabsContent value={activeTab} className="mt-0">
@@ -147,7 +216,6 @@ const ResultCard = ({
 
   const handleSave = () => {
     setIsSaved(!isSaved);
-    // In a real app, you'd save this to user's saved items
   };
 
   return (
