@@ -1,6 +1,6 @@
 
 import { DATABASE_NAMES } from '../models/Database';
-import { SearchOptions, SearchResult } from '../models/SearchResult';
+import { SearchOptions, SearchResult, SearchHistory } from '../models/SearchResult';
 import { getAccessibleDatabases } from '../models/Database';
 
 /**

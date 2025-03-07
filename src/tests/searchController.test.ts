@@ -8,6 +8,7 @@
 
 import { searchController } from '../controllers/searchController';
 import { SearchResult } from '../models/SearchResult';
+import '@types/jest';
 
 // Mocks pour localStorage
 const localStorageMock = (() => {

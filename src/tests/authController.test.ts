@@ -8,6 +8,7 @@
 
 import { authController } from '../controllers/authController';
 import { CredentialsStore } from '../models/Database';
+import '@types/jest';
 
 // Mocks pour localStorage
 const localStorageMock = (() => {
