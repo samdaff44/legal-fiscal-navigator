@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -14,11 +15,9 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import AdvancedFilters from './AdvancedFilters';
-
-interface SearchHistory {
-  query: string;
-  timestamp: number;
-}
+import { searchController } from '@/controllers/searchController';
+import { authController } from '@/controllers/authController';
+import { SearchHistory } from '@/models/SearchResult';
 
 const DATABASE_NAMES = [
   { name: "Toutes les bases", icon: <Database className="h-4 w-4" /> },
@@ -27,6 +26,9 @@ const DATABASE_NAMES = [
   { name: "EFL Francis Lefebvre", icon: <Database className="h-4 w-4" /> }
 ];
 
+/**
+ * Composant de barre de recherche
+ */
 const SearchBar = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -39,13 +41,12 @@ const SearchBar = () => {
   const [selectedDatabases, setSelectedDatabases] = useState<string[]>(["Toutes les bases"]);
 
   useEffect(() => {
-    const savedHistory = localStorage.getItem('searchHistory');
-    if (savedHistory) {
-      setSearchHistory(JSON.parse(savedHistory));
-    }
+    // Récupération de l'historique des recherches
+    setSearchHistory(searchController.getSearchHistory());
   }, []);
 
   useEffect(() => {
+    // Gestion des clics en dehors de la barre de recherche
     const handleClickOutside = (event: MouseEvent) => {
       if (
         searchInputRef.current && 
@@ -61,6 +62,9 @@ const SearchBar = () => {
     };
   }, []);
 
+  /**
+   * Gère la soumission du formulaire de recherche
+   */
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -74,8 +78,8 @@ const SearchBar = () => {
       return;
     }
 
-    const credentials = localStorage.getItem('databaseCredentials');
-    if (!credentials) {
+    // Vérifie si l'utilisateur est authentifié
+    if (!authController.isAuthenticated()) {
       toast({
         title: "Connexion requise",
         description: "Veuillez d'abord vous connecter aux bases de données",
@@ -88,14 +92,18 @@ const SearchBar = () => {
 
     setIsSearching(true);
 
+    // Mise à jour de l'historique des recherches
+    const trimmedQuery = query.trim();
+    const currentHistory = searchController.getSearchHistory();
     const newHistory = [
-      { query: query.trim(), timestamp: Date.now() },
-      ...searchHistory.filter(item => item.query !== query.trim()).slice(0, 4)
+      { query: trimmedQuery, timestamp: Date.now() },
+      ...currentHistory.filter(item => item.query !== trimmedQuery).slice(0, 4)
     ];
     
     setSearchHistory(newHistory);
     localStorage.setItem('searchHistory', JSON.stringify(newHistory));
 
+    // Toast de notification
     const dbMessage = selectedDatabases.includes("Toutes les bases") 
       ? "Recherche sur les trois bases de données..."
       : `Recherche sur ${selectedDatabases.join(", ")}...`;
@@ -106,6 +114,7 @@ const SearchBar = () => {
       duration: 2000,
     });
 
+    // Redirection vers la page de résultats
     setTimeout(() => {
       setIsSearching(false);
       navigate('/results', { 
@@ -119,6 +128,9 @@ const SearchBar = () => {
     }, 1000);
   };
 
+  /**
+   * Sélectionne un élément de l'historique
+   */
   const selectHistoryItem = (item: string) => {
     setQuery(item);
     setShowSearchHistory(false);
@@ -127,6 +139,9 @@ const SearchBar = () => {
     }
   };
 
+  /**
+   * Efface la requête de recherche
+   */
   const clearQuery = () => {
     setQuery('');
     if (searchInputRef.current) {
@@ -134,6 +149,9 @@ const SearchBar = () => {
     }
   };
 
+  /**
+   * Bascule la sélection d'une base de données
+   */
   const toggleDatabase = (dbName: string) => {
     if (dbName === "Toutes les bases") {
       setSelectedDatabases(["Toutes les bases"]);
@@ -151,6 +169,15 @@ const SearchBar = () => {
     } else {
       setSelectedDatabases([...newSelection, dbName]);
     }
+  };
+
+  /**
+   * Efface l'historique des recherches
+   */
+  const clearSearchHistory = () => {
+    searchController.clearSearchHistory();
+    setSearchHistory([]);
+    setShowSearchHistory(false);
   };
 
   return (
@@ -171,6 +198,7 @@ const SearchBar = () => {
               placeholder="Rechercher des articles, jurisprudence, textes de loi..."
               className="pl-10 pr-10 py-6 text-base shadow-soft"
               disabled={isSearching}
+              aria-label="Champ de recherche"
             />
             
             {query && (
@@ -178,6 +206,7 @@ const SearchBar = () => {
                 type="button"
                 onClick={clearQuery}
                 className="absolute inset-y-0 right-2 flex items-center"
+                aria-label="Effacer la recherche"
               >
                 <X className="h-5 w-5 text-muted-foreground hover:text-foreground transition-colors" />
               </button>
@@ -205,6 +234,7 @@ const SearchBar = () => {
             type="submit" 
             className="ml-2" 
             disabled={isSearching || !query.trim()}
+            aria-label="Lancer la recherche"
           >
             {isSearching ? "Recherche..." : "Rechercher"}
           </Button>
@@ -236,11 +266,7 @@ const SearchBar = () => {
           <div className="p-2 border-t">
             <button
               type="button"
-              onClick={() => {
-                setSearchHistory([]);
-                localStorage.removeItem('searchHistory');
-                setShowSearchHistory(false);
-              }}
+              onClick={clearSearchHistory}
               className="text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               Effacer l'historique
@@ -281,6 +307,7 @@ const DatabaseButton = ({ icon, name, isActive, onClick }: DatabaseButtonProps) 
           : 'bg-background hover:bg-accent'
       }`}
       onClick={onClick}
+      aria-pressed={isActive}
     >
       <span className="flex items-center">
         <span className="mr-2">{icon}</span>

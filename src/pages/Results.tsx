@@ -19,11 +19,15 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import AdvancedFilters from '@/components/AdvancedFilters';
+import { authController } from '@/controllers/authController';
 
 interface LocationState {
   query?: string;
 }
 
+/**
+ * Page de résultats de recherche
+ */
 const Results = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -32,6 +36,13 @@ const Results = () => {
   const [filtersOpen, setFiltersOpen] = useState(false);
   
   useEffect(() => {
+    // Vérifie si l'utilisateur est authentifié
+    if (!authController.isAuthenticated()) {
+      navigate('/');
+      return;
+    }
+    
+    // Récupère la requête depuis l'état de navigation
     const state = location.state as LocationState;
     
     if (!state || !state.query) {
@@ -123,7 +134,7 @@ const Results = () => {
             © 2023 LegalFiscal Navigator. Tous droits réservés.
           </p>
           <p className="text-center text-sm text-muted-foreground">
-            Résultats compilés de LexisNexis, Westlaw et DataFiscal
+            Résultats compilés de vos bases de données juridiques
           </p>
         </div>
       </footer>

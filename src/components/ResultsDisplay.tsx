@@ -6,6 +6,10 @@ import { SearchLoadingState, SearchErrorState, SearchEmptyState } from './Search
 import SearchResultsTabs from './SearchResultsTabs';
 import { Database } from 'lucide-react';
 
+/**
+ * Composant d'affichage des résultats de recherche (Vue)
+ * @param {ResultsDisplayProps} props - Propriétés du composant
+ */
 const ResultsDisplay = ({ query }: ResultsDisplayProps) => {
   const {
     results,

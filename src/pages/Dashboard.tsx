@@ -7,32 +7,24 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Database, Book, FileClock, Clock, CheckCircle, Search } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
+import { getAccessibleDatabases } from '@/models/Database'; 
+import { searchController } from '@/controllers/searchController';
+import { authController } from '@/controllers/authController';
+import { SearchHistory, DatabaseStatus } from '@/models/SearchResult';
 
-interface RecentSearch {
-  query: string;
-  date: string;
-  results: number;
-}
-
-interface DatabaseStatus {
-  name: string;
-  status: 'connected' | 'disconnected' | 'error';
-  lastChecked: string;
-}
-
+/**
+ * Page de tableau de bord
+ */
 const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [hasCredentials, setHasCredentials] = useState(false);
-  const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([]);
+  const [recentSearches, setRecentSearches] = useState<SearchHistory[]>([]);
   const [suggestedQueries, setSuggestedQueries] = useState<string[]>([]);
   const [databasesStatus, setDatabasesStatus] = useState<DatabaseStatus[]>([]);
 
   useEffect(() => {
-    // Check if we have credentials
-    const credentials = localStorage.getItem('databaseCredentials');
-    
-    if (!credentials) {
+    // Vérifie si l'utilisateur est authentifié
+    if (!authController.isAuthenticated()) {
       toast({
         title: "Identifiants manquants",
         description: "Veuillez d'abord configurer vos identifiants",
@@ -42,24 +34,23 @@ const Dashboard = () => {
       navigate('/');
       return;
     }
+
+    // Récupère les bases de données accessibles
+    const accessibleDatabases = getAccessibleDatabases();
     
-    setHasCredentials(true);
+    // Définit le statut des connexions aux bases de données
+    setDatabasesStatus(
+      accessibleDatabases.map(name => ({
+        name,
+        status: "connected",
+        lastChecked: new Date().toISOString()
+      }))
+    );
 
-    // Set database connection status
-    setDatabasesStatus([
-      { name: "Lexis Nexis", status: "connected", lastChecked: new Date().toISOString() },
-      { name: "Dalloz", status: "connected", lastChecked: new Date().toISOString() },
-      { name: "EFL Francis Lefebvre", status: "connected", lastChecked: new Date().toISOString() }
-    ]);
+    // Récupère l'historique des recherches
+    setRecentSearches(searchController.getSearchHistory());
 
-    // Mock data for recent searches
-    setRecentSearches([
-      { query: "Fraude fiscale internationale", date: "2023-05-12", results: 42 },
-      { query: "Optimisation fiscale et abus de droit", date: "2023-05-10", results: 37 },
-      { query: "Contentieux fiscal procédure", date: "2023-05-08", results: 54 },
-    ]);
-
-    // Mock data for suggested queries
+    // Suggestions de recherches (données fictives)
     setSuggestedQueries([
       "Déclaration fiscale obligations",
       "Jurisprudence TVA immobilier",
@@ -68,9 +59,12 @@ const Dashboard = () => {
     ]);
   }, [navigate, toast]);
 
-  if (!hasCredentials) {
-    return <div className="flex items-center justify-center h-screen">Chargement...</div>;
-  }
+  /**
+   * Lance une recherche à partir de l'historique
+   */
+  const handleHistorySearch = (query: string) => {
+    navigate('/results', { state: { query } });
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -83,7 +77,7 @@ const Dashboard = () => {
               Recherchez dans vos bases juridiques et fiscales
             </h1>
             <p className="text-muted-foreground text-lg mb-10 max-w-3xl mx-auto font-light leading-relaxed">
-              Notre système recherche simultanément dans Lexis Nexis, Dalloz et EFL Francis Lefebvre
+              Notre système recherche simultanément dans vos bases de données juridiques
               pour vous fournir les résultats les plus pertinents.
             </p>
             
@@ -92,6 +86,7 @@ const Dashboard = () => {
                 <div 
                   key={index}
                   className="bg-accent/30 rounded-full px-4 py-1.5 flex items-center text-sm"
+                  aria-label={`Statut de connexion: ${db.name}`}
                 >
                   <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
                   <span className="font-light">Connecté à {db.name}</span>
@@ -120,7 +115,7 @@ const Dashboard = () => {
                         key={index}
                         variant="outline"
                         className="w-full justify-between bg-background hover:bg-accent/30 transition-all duration-200 h-auto py-3 px-4 border-border/30"
-                        onClick={() => navigate('/results', { state: { query: search.query } })}
+                        onClick={() => handleHistorySearch(search.query)}
                       >
                         <div className="flex items-center gap-2">
                           <Search className="h-4 w-4 text-muted-foreground" />
@@ -129,7 +124,7 @@ const Dashboard = () => {
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           <span>{search.results} résultats</span>
                           <span>•</span>
-                          <span>{new Date(search.date).toLocaleDateString('fr-FR')}</span>
+                          <span>{new Date(search.timestamp).toLocaleDateString('fr-FR')}</span>
                         </div>
                       </Button>
                     ))
@@ -157,7 +152,7 @@ const Dashboard = () => {
                         key={index}
                         variant="outline"
                         className="justify-start hover:bg-accent/30 transition-all duration-200 border-border/30 h-auto py-3"
-                        onClick={() => navigate('/results', { state: { query } })}
+                        onClick={() => handleHistorySearch(query)}
                       >
                         <FileClock className="h-4 w-4 mr-2 text-muted-foreground" />
                         <span className="font-light text-sm">{query}</span>

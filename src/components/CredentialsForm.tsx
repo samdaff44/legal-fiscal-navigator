@@ -14,50 +14,28 @@ import {
   CardTitle 
 } from "@/components/ui/card";
 import { Database, Lock, Shield, ExternalLink, InfoIcon } from 'lucide-react';
+import { CredentialsStore, DATABASE_NAMES, DATABASE_URLS } from '@/models/Database';
+import { authController } from '@/controllers/authController';
 
-interface Credentials {
-  database1: {
-    username: string;
-    password: string;
-    url: string;
-  };
-  database2: {
-    username: string;
-    password: string;
-    url: string;
-  };
-  database3: {
-    username: string;
-    password: string;
-    url: string;
-  };
-}
-
-const DATABASE_NAMES = {
-  database1: "Lexis Nexis",
-  database2: "Dalloz",
-  database3: "EFL Francis Lefebvre"
-};
-
-const DATABASE_URLS = {
-  database1: "https://www.lexisnexis.fr",
-  database2: "https://www.dalloz.fr",
-  database3: "https://www.efl.fr"
-};
-
+/**
+ * Composant de formulaire d'identifiants pour les bases de données
+ */
 const CredentialsForm = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [activeDatabase, setActiveDatabase] = useState<keyof Credentials>("database1");
+  const [activeDatabase, setActiveDatabase] = useState<keyof CredentialsStore>("database1");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [credentials, setCredentials] = useState<Credentials>({
+  const [credentials, setCredentials] = useState<CredentialsStore>({
     database1: { username: "", password: "", url: DATABASE_URLS.database1 },
     database2: { username: "", password: "", url: DATABASE_URLS.database2 },
     database3: { username: "", password: "", url: DATABASE_URLS.database3 }
   });
 
+  /**
+   * Gère le changement d'identifiants
+   */
   const handleCredentialChange = (
-    db: keyof Credentials,
+    db: keyof CredentialsStore,
     field: "username" | "password",
     value: string
   ) => {
@@ -70,68 +48,49 @@ const CredentialsForm = () => {
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  /**
+   * Gère la soumission du formulaire
+   */
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     
-    // Get databases with credentials
-    const databasesWithCredentials = Object.keys(credentials).filter(db => {
-      const dbKey = db as keyof Credentials;
-      return credentials[dbKey].username.trim() !== "" && credentials[dbKey].password.trim() !== "";
-    });
-    
-    if (databasesWithCredentials.length === 0) {
+    try {
+      // Tentative de connexion via le contrôleur d'authentification
+      const connectedDatabases = await authController.login(credentials);
+      
+      toast({
+        title: "Connexion réussie",
+        description: `Vous êtes connecté à ${connectedDatabases.length} base${connectedDatabases.length > 1 ? 's' : ''} de données`,
+        duration: 3000,
+      });
+      
+      navigate('/dashboard');
+    } catch (error) {
       toast({
         title: "Erreur",
-        description: "Veuillez saisir les identifiants pour au moins une base de données",
+        description: error instanceof Error ? error.message : "Une erreur est survenue lors de la connexion",
         variant: "destructive",
         duration: 3000,
       });
+    } finally {
       setIsSubmitting(false);
-      return;
     }
-    
-    // Simulate connections only to the databases with credentials
-    const connectToDatabase = (index: number) => {
-      if (index >= databasesWithCredentials.length) {
-        // Store credentials in localStorage
-        localStorage.setItem('databaseCredentials', JSON.stringify(credentials));
-        
-        toast({
-          title: "Connexion réussie",
-          description: `Vous êtes connecté à ${databasesWithCredentials.length} base${databasesWithCredentials.length > 1 ? 's' : ''} de données`,
-          duration: 3000,
-        });
-        
-        setIsSubmitting(false);
-        navigate('/dashboard');
-        return;
-      }
-      
-      const dbKey = databasesWithCredentials[index] as keyof typeof DATABASE_NAMES;
-      
-      toast({
-        title: "Connexion en cours",
-        description: `Connexion à ${DATABASE_NAMES[dbKey]}...`,
-        duration: 1000,
-      });
-      
-      setTimeout(() => {
-        connectToDatabase(index + 1);
-      }, 1000);
-    };
-    
-    // Start the connection process
-    connectToDatabase(0);
   };
 
+  /**
+   * Vérifie si le formulaire est valide
+   */
   const isFormValid = () => {
-    // Check if at least one database has both username and password
+    // Vérifie si au moins une base de données a un nom d'utilisateur et un mot de passe
     return Object.values(credentials).some(db => 
       db.username.trim() !== "" && db.password.trim() !== ""
     );
   };
 
+  /**
+   * Visite le site web de la base de données
+   */
   const visitDatabaseWebsite = (url: string) => {
     window.open(url, '_blank', 'noopener,noreferrer');
   };
@@ -158,7 +117,7 @@ const CredentialsForm = () => {
       
         <form onSubmit={handleSubmit}>
           <div className="flex border rounded-lg overflow-hidden mb-6">
-            {(Object.keys(credentials) as Array<keyof Credentials>).map((db) => (
+            {(Object.keys(credentials) as Array<keyof CredentialsStore>).map((db) => (
               <button
                 key={db}
                 type="button"
@@ -224,7 +183,11 @@ const CredentialsForm = () => {
           </div>
 
           <div className="mt-8">
-            <Button type="submit" className="w-full" disabled={!isFormValid() || isSubmitting}>
+            <Button 
+              type="submit" 
+              className="w-full" 
+              disabled={!isFormValid() || isSubmitting}
+            >
               {isSubmitting ? "Connexion..." : "Se connecter aux bases de données"}
             </Button>
           </div>
