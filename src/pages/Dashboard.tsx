@@ -1,9 +1,11 @@
+
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
 import SearchBar from '@/components/SearchBar';
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Database, Book, FileClock, Clock, CheckCircle } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { ArrowLeft, Database, Book, FileClock, Clock, CheckCircle, Search } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 
 interface RecentSearch {
@@ -71,111 +73,121 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-background">
       <Header />
       
-      <main className="flex-grow flex flex-col pt-20 px-4 md:px-8">
-        <div className="container mx-auto py-8 md:py-12">
+      <main className="flex-grow flex flex-col pt-24 px-4 md:px-8 pb-16">
+        <div className="container mx-auto max-w-6xl">
           <section className="mb-12 text-center animate-fade-in">
-            <h1 className="text-3xl md:text-4xl font-bold mb-6">
+            <h1 className="squarespace-heading text-3xl md:text-4xl font-light tracking-tight mb-6">
               Recherchez dans vos bases juridiques et fiscales
             </h1>
-            <p className="text-muted-foreground text-lg mb-12 max-w-3xl mx-auto">
+            <p className="text-muted-foreground text-lg mb-10 max-w-3xl mx-auto font-light leading-relaxed">
               Notre système recherche simultanément dans Lexis Nexis, Dalloz et EFL Francis Lefebvre
               pour vous fournir les résultats les plus pertinents.
             </p>
             
-            <div className="flex flex-wrap justify-center gap-2 mb-6">
+            <div className="flex flex-wrap justify-center gap-3 mb-8">
               {databasesStatus.map((db, index) => (
                 <div 
                   key={index}
-                  className="bg-secondary/50 rounded-full px-4 py-1 flex items-center text-sm"
+                  className="bg-accent/30 rounded-full px-4 py-1.5 flex items-center text-sm"
                 >
-                  <CheckCircle className="h-4 w-4 text-green-500 mr-1" />
-                  <span>Connecté à {db.name}</span>
+                  <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                  <span className="font-light">Connecté à {db.name}</span>
                 </div>
               ))}
             </div>
             
-            <SearchBar />
+            <div className="max-w-2xl mx-auto">
+              <SearchBar />
+            </div>
           </section>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
             <section className="animate-slide-in" style={{ animationDelay: "0.1s" }}>
-              <div className="flex items-center gap-2 mb-4">
-                <Clock className="h-5 w-5 text-muted-foreground" />
-                <h2 className="text-xl font-semibold">Recherches récentes</h2>
-              </div>
-              
-              <div className="space-y-4">
-                {recentSearches.map((search, index) => (
-                  <Button
-                    key={index}
-                    variant="outline"
-                    className="w-full justify-between bg-card hover:bg-accent/50 transition-all duration-200"
-                    onClick={() => navigate('/results', { state: { query: search.query } })}
-                  >
-                    <div className="flex items-center gap-2">
-                      <Database className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-normal">{search.query}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <span>{search.results} résultats</span>
-                      <span>•</span>
-                      <span>{new Date(search.date).toLocaleDateString('fr-FR')}</span>
-                    </div>
-                  </Button>
-                ))}
-                
-                {recentSearches.length === 0 && (
-                  <div className="bg-accent p-6 rounded-lg text-center">
-                    <p className="text-muted-foreground">Aucune recherche récente</p>
+              <Card className="squarespace-card border-border/20 bg-card/50 overflow-hidden">
+                <CardHeader className="pb-2">
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-5 w-5 text-muted-foreground" />
+                    <CardTitle className="text-xl font-medium">Recherches récentes</CardTitle>
                   </div>
-                )}
-              </div>
+                </CardHeader>
+                <CardContent className="pt-4 space-y-4">
+                  {recentSearches.length > 0 ? (
+                    recentSearches.map((search, index) => (
+                      <Button
+                        key={index}
+                        variant="outline"
+                        className="w-full justify-between bg-background hover:bg-accent/30 transition-all duration-200 h-auto py-3 px-4 border-border/30"
+                        onClick={() => navigate('/results', { state: { query: search.query } })}
+                      >
+                        <div className="flex items-center gap-2">
+                          <Search className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-light">{search.query}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <span>{search.results} résultats</span>
+                          <span>•</span>
+                          <span>{new Date(search.date).toLocaleDateString('fr-FR')}</span>
+                        </div>
+                      </Button>
+                    ))
+                  ) : (
+                    <div className="bg-accent/20 p-6 rounded-lg text-center">
+                      <p className="text-muted-foreground font-light">Aucune recherche récente</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </section>
             
             <section className="animate-slide-in" style={{ animationDelay: "0.2s" }}>
-              <div className="flex items-center gap-2 mb-4">
-                <Book className="h-5 w-5 text-muted-foreground" />
-                <h2 className="text-xl font-semibold">Suggestions</h2>
-              </div>
-              
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {suggestedQueries.map((query, index) => (
-                  <Button
-                    key={index}
-                    variant="outline"
-                    className="justify-start hover:bg-accent/50 transition-all duration-200"
-                    onClick={() => navigate('/results', { state: { query } })}
-                  >
-                    <FileClock className="h-4 w-4 mr-2 text-muted-foreground" />
-                    <span className="font-normal text-sm">{query}</span>
-                  </Button>
-                ))}
-              </div>
-              
-              <div className="bg-accent/30 rounded-lg p-6 mt-6">
-                <h3 className="font-medium mb-2">Besoin d'aide pour votre recherche?</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Utilisez des opérateurs booléens (ET, OU, SAUF) pour affiner vos résultats.
-                  Placez des expressions entre guillemets pour une correspondance exacte.
-                </p>
-                <Button variant="link" className="text-primary p-0">
-                  Voir plus d'astuces de recherche
-                </Button>
-              </div>
+              <Card className="squarespace-card border-border/20 bg-card/50 overflow-hidden">
+                <CardHeader className="pb-2">
+                  <div className="flex items-center gap-2">
+                    <Book className="h-5 w-5 text-muted-foreground" />
+                    <CardTitle className="text-xl font-medium">Suggestions</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+                    {suggestedQueries.map((query, index) => (
+                      <Button
+                        key={index}
+                        variant="outline"
+                        className="justify-start hover:bg-accent/30 transition-all duration-200 border-border/30 h-auto py-3"
+                        onClick={() => navigate('/results', { state: { query } })}
+                      >
+                        <FileClock className="h-4 w-4 mr-2 text-muted-foreground" />
+                        <span className="font-light text-sm">{query}</span>
+                      </Button>
+                    ))}
+                  </div>
+                  
+                  <div className="bg-accent/20 rounded-lg p-6 mt-4">
+                    <h3 className="font-medium mb-2">Besoin d'aide pour votre recherche?</h3>
+                    <p className="text-sm text-muted-foreground mb-4 font-light">
+                      Utilisez des opérateurs booléens (ET, OU, SAUF) pour affiner vos résultats.
+                      Placez des expressions entre guillemets pour une correspondance exacte.
+                    </p>
+                    <Button variant="link" className="text-primary p-0 font-light">
+                      Voir plus d'astuces de recherche
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
             </section>
           </div>
         </div>
       </main>
       
-      <footer className="border-t py-6 bg-secondary/50">
-        <div className="container flex flex-col items-center justify-between gap-4 md:flex-row">
-          <p className="text-center text-sm text-muted-foreground">
+      <footer className="border-t border-border/20 py-8 bg-secondary/30">
+        <div className="container max-w-6xl mx-auto flex flex-col items-center justify-between gap-4 md:flex-row px-4">
+          <p className="text-center text-sm text-muted-foreground font-light">
             © 2023 LegalFiscal Navigator. Tous droits réservés.
           </p>
-          <p className="text-center text-sm text-muted-foreground">
+          <p className="text-center text-sm text-muted-foreground font-light">
             Connecté à toutes vos bases de données
           </p>
         </div>
