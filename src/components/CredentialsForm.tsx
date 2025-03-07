@@ -13,7 +13,7 @@ import {
   CardHeader, 
   CardTitle 
 } from "@/components/ui/card";
-import { Database, Lock, Shield, ExternalLink } from 'lucide-react';
+import { Database, Lock, Shield, ExternalLink, InfoIcon } from 'lucide-react';
 
 interface Credentials {
   database1: {
@@ -74,46 +74,60 @@ const CredentialsForm = () => {
     e.preventDefault();
     setIsSubmitting(true);
     
-    // Simulate connections to all three websites
-    toast({
-      title: "Connexion en cours",
-      description: `Connexion à ${DATABASE_NAMES.database1}...`,
-      duration: 1000,
+    // Get databases with credentials
+    const databasesWithCredentials = Object.keys(credentials).filter(db => {
+      const dbKey = db as keyof Credentials;
+      return credentials[dbKey].username.trim() !== "" && credentials[dbKey].password.trim() !== "";
     });
     
-    setTimeout(() => {
+    if (databasesWithCredentials.length === 0) {
+      toast({
+        title: "Erreur",
+        description: "Veuillez saisir les identifiants pour au moins une base de données",
+        variant: "destructive",
+        duration: 3000,
+      });
+      setIsSubmitting(false);
+      return;
+    }
+    
+    // Simulate connections only to the databases with credentials
+    const connectToDatabase = (index: number) => {
+      if (index >= databasesWithCredentials.length) {
+        // Store credentials in localStorage
+        localStorage.setItem('databaseCredentials', JSON.stringify(credentials));
+        
+        toast({
+          title: "Connexion réussie",
+          description: `Vous êtes connecté à ${databasesWithCredentials.length} base${databasesWithCredentials.length > 1 ? 's' : ''} de données`,
+          duration: 3000,
+        });
+        
+        setIsSubmitting(false);
+        navigate('/dashboard');
+        return;
+      }
+      
+      const dbKey = databasesWithCredentials[index] as keyof typeof DATABASE_NAMES;
+      
       toast({
         title: "Connexion en cours",
-        description: `Connexion à ${DATABASE_NAMES.database2}...`,
+        description: `Connexion à ${DATABASE_NAMES[dbKey]}...`,
         duration: 1000,
       });
       
       setTimeout(() => {
-        toast({
-          title: "Connexion en cours",
-          description: `Connexion à ${DATABASE_NAMES.database3}...`,
-          duration: 1000,
-        });
-        
-        setTimeout(() => {
-          // Store credentials in localStorage
-          localStorage.setItem('databaseCredentials', JSON.stringify(credentials));
-          
-          toast({
-            title: "Connexion réussie",
-            description: "Vos identifiants ont été enregistrés et vous êtes connecté aux trois bases de données",
-            duration: 3000,
-          });
-          
-          setIsSubmitting(false);
-          navigate('/dashboard');
-        }, 1000);
+        connectToDatabase(index + 1);
       }, 1000);
-    }, 1000);
+    };
+    
+    // Start the connection process
+    connectToDatabase(0);
   };
 
-  const isFormComplete = () => {
-    return Object.values(credentials).every(db => 
+  const isFormValid = () => {
+    // Check if at least one database has both username and password
+    return Object.values(credentials).some(db => 
       db.username.trim() !== "" && db.password.trim() !== ""
     );
   };
@@ -135,6 +149,13 @@ const CredentialsForm = () => {
       </CardHeader>
       
       <CardContent>
+        <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3 mb-6 flex items-start">
+          <InfoIcon className="text-amber-600 dark:text-amber-400 h-5 w-5 mr-3 mt-0.5 flex-shrink-0" />
+          <p className="text-sm text-amber-800 dark:text-amber-300">
+            Vous pouvez vous connecter avec les identifiants d'une seule base de données si nécessaire. Les recherches s'effectueront uniquement sur les bases de données pour lesquelles vous avez fourni des identifiants.
+          </p>
+        </div>
+      
         <form onSubmit={handleSubmit}>
           <div className="flex border rounded-lg overflow-hidden mb-6">
             {(Object.keys(credentials) as Array<keyof Credentials>).map((db) => (
@@ -203,7 +224,7 @@ const CredentialsForm = () => {
           </div>
 
           <div className="mt-8">
-            <Button type="submit" className="w-full" disabled={!isFormComplete() || isSubmitting}>
+            <Button type="submit" className="w-full" disabled={!isFormValid() || isSubmitting}>
               {isSubmitting ? "Connexion..." : "Se connecter aux bases de données"}
             </Button>
           </div>

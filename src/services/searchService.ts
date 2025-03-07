@@ -102,16 +102,36 @@ export const searchAllDatabases = async (options: SearchOptions): Promise<Search
   }
 
   try {
-    // Get results from all three databases in parallel
-    const [lexisResults, dallozResults, eflResults] = await Promise.all([
-      searchDatabase('Lexis Nexis', options),
-      searchDatabase('Dalloz', options),
-      searchDatabase('EFL Francis Lefebvre', options)
-    ]);
+    const credentials = JSON.parse(credentialsString);
+    
+    // Determine which databases have credentials
+    const databasesToSearch = [];
+    const searchPromises = [];
+    
+    if (credentials.database1.username && credentials.database1.password) {
+      databasesToSearch.push('Lexis Nexis');
+      searchPromises.push(searchDatabase('Lexis Nexis', options));
+    }
+    
+    if (credentials.database2.username && credentials.database2.password) {
+      databasesToSearch.push('Dalloz');
+      searchPromises.push(searchDatabase('Dalloz', options));
+    }
+    
+    if (credentials.database3.username && credentials.database3.password) {
+      databasesToSearch.push('EFL Francis Lefebvre');
+      searchPromises.push(searchDatabase('EFL Francis Lefebvre', options));
+    }
+    
+    if (databasesToSearch.length === 0) {
+      throw new Error("Aucune base de données accessible. Veuillez fournir au moins un identifiant.");
+    }
 
+    // Get results from all available databases in parallel
+    const searchResults = await Promise.all(searchPromises);
+    
     // Combine and sort by relevance
-    const allResults = [...lexisResults, ...dallozResults, ...eflResults]
-      .sort((a, b) => b.relevance - a.relevance);
+    const allResults = searchResults.flat().sort((a, b) => b.relevance - a.relevance);
     
     return allResults;
   } catch (error) {

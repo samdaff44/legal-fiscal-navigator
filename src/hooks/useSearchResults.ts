@@ -14,6 +14,7 @@ export const useSearchResults = ({ query }: UseSearchResultsProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expandedResult, setExpandedResult] = useState<string | null>(null);
+  const [searchedDatabases, setSearchedDatabases] = useState<string[]>([]);
 
   useEffect(() => {
     const fetchResults = async () => {
@@ -21,9 +22,30 @@ export const useSearchResults = ({ query }: UseSearchResultsProps) => {
       setError(null);
       
       try {
+        // Determine which databases have credentials
+        const credentialsString = localStorage.getItem('databaseCredentials');
+        const credentials = credentialsString ? JSON.parse(credentialsString) : null;
+        
+        if (!credentials) {
+          throw new Error("Aucun identifiant trouvé. Veuillez vous connecter d'abord.");
+        }
+        
+        const availableDatabases = [];
+        if (credentials.database1.username && credentials.database1.password) {
+          availableDatabases.push('Lexis Nexis');
+        }
+        if (credentials.database2.username && credentials.database2.password) {
+          availableDatabases.push('Dalloz');
+        }
+        if (credentials.database3.username && credentials.database3.password) {
+          availableDatabases.push('EFL Francis Lefebvre');
+        }
+        
+        setSearchedDatabases(availableDatabases);
+        
         toast({
           title: "Recherche en cours",
-          description: "Interrogation des trois bases de données...",
+          description: `Interrogation de ${availableDatabases.length} base${availableDatabases.length > 1 ? 's' : ''} de données: ${availableDatabases.join(', ')}`,
           duration: 3000,
         });
         
@@ -32,7 +54,7 @@ export const useSearchResults = ({ query }: UseSearchResultsProps) => {
         
         toast({
           title: "Recherche terminée",
-          description: `${searchResults.length} résultats trouvés sur les trois bases de données`,
+          description: `${searchResults.length} résultats trouvés`,
           duration: 3000,
         });
       } catch (err) {
@@ -72,6 +94,7 @@ export const useSearchResults = ({ query }: UseSearchResultsProps) => {
     error,
     expandedResult,
     toggleExpand,
-    handleCopy
+    handleCopy,
+    searchedDatabases
   };
 };
