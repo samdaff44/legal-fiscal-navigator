@@ -1,7 +1,7 @@
-
 import { DATABASE_NAMES } from '../models/Database';
 import { SearchOptions, SearchResult, SearchHistory } from '../models/SearchResult';
 import { getAccessibleDatabases } from '../models/Database';
+import { searchAllSites, scrapingRateLimiter } from '../services/scrapingService';
 
 /**
  * Contrôleur pour les opérations de recherche
@@ -20,81 +20,32 @@ class SearchController {
       throw new Error("Aucune base de données accessible. Veuillez fournir au moins un identifiant.");
     }
 
+    // Vérifier les limites de taux par requête
+    const rateLimitKey = options.query.toLowerCase().trim();
+    if (!scrapingRateLimiter.isActionAllowed(rateLimitKey)) {
+      const timeToWait = scrapingRateLimiter.getTimeToWait(rateLimitKey);
+      throw new Error(`Trop de recherches. Veuillez réessayer dans ${Math.ceil(timeToWait / 1000)} secondes.`);
+    }
+
     try {
-      // Recherche parallèle sur toutes les bases de données accessibles
-      const searchPromises = accessibleDatabases.map(db => this.searchDatabase(db, options));
-      const searchResults = await Promise.all(searchPromises);
+      // Utilisation du service de scraping pour obtenir les résultats
+      console.log(`Recherche via scraping pour la requête: ${options.query}`);
+      const searchResults = await searchAllSites(options.query);
       
-      // Combine et trie par pertinence
-      const allResults = searchResults.flat().sort((a, b) => b.relevance - a.relevance);
+      // Appliquer les filtres si nécessaire
+      let filteredResults = searchResults;
+      if (options.filters) {
+        filteredResults = this.filterResults(searchResults, options.filters);
+      }
       
-      return allResults;
+      // Trier par pertinence
+      const sortedResults = filteredResults.sort((a, b) => b.relevance - a.relevance);
+      
+      return sortedResults;
     } catch (error) {
       console.error("Erreur lors de la recherche:", error);
       throw new Error("Une erreur est survenue lors de la recherche. Veuillez réessayer.");
     }
-  }
-
-  /**
-   * Effectue une recherche sur une base de données spécifique
-   * @param {string} database - Nom de la base de données
-   * @param {SearchOptions} options - Options de recherche
-   * @returns {Promise<SearchResult[]>} Résultats de recherche
-   * @private
-   */
-  private async searchDatabase(
-    database: string,
-    options: SearchOptions
-  ): Promise<SearchResult[]> {
-    // Simulation de requête API vers chaque base de données
-    console.log(`Recherche dans ${database} avec requête: ${options.query}`);
-    
-    // Cette implémentation est une simulation - en production, elle ferait des appels API réels
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const results: SearchResult[] = [];
-        
-        // Génère des résultats fictifs par base de données
-        const resultsCount = options.filters?.maxResults ? 
-          Math.min(options.filters.maxResults, 30) : 15;
-        
-        for (let i = 0; i < resultsCount; i++) {
-          // Données fictives diverses
-          const types = ['jurisprudence', 'doctrine', 'legislation', 'article'];
-          const typeIndex = i % 4;
-          const jurisdictions = ['Cour de cassation', 'Conseil d\'État', 'Cour d\'appel', 'Tribunal administratif', 'Conseil constitutionnel'];
-          const courts = ['Première chambre civile', 'Chambre commerciale', 'Chambre sociale', 'Chambre criminelle'];
-          const authors = ['Dupont', 'Martin', 'Dubois', 'Lefebvre', 'Moreau'];
-          const categories = ['Droit fiscal', 'Droit des sociétés', 'Droit du travail', 'Droit pénal', 'Droit administratif'];
-          const languages = ['Français', 'Anglais'];
-          const countries = ['France', 'Belgique', 'Luxembourg', 'Suisse'];
-          
-          results.push({
-            id: `${database.toLowerCase().replace(/\s/g, '-')}-${i + 1}`,
-            title: `${types[typeIndex] === 'jurisprudence' ? 'Arrêt' : 
-                    types[typeIndex] === 'doctrine' ? 'Article sur' : 
-                    types[typeIndex] === 'legislation' ? 'Texte concernant' : 
-                    'Publication relative à'} ${options.query} - ${database}`,
-            excerpt: `Ce document de ${database} traite de "${options.query}" dans le contexte fiscal et juridique. Il aborde les questions essentielles concernant l'application des dispositions légales.`,
-            source: database as any,
-            type: types[typeIndex] as any,
-            date: `${2000 + (i % 23)}-${String(1 + (i % 12)).padStart(2, '0')}-${String(1 + (i % 28)).padStart(2, '0')}`,
-            url: `https://example.com/${database.toLowerCase().replace(/\s/g, '')}/document/${i + 1}`,
-            relevance: Math.round(98 - (i * 1.5)),
-            jurisdiction: jurisdictions[i % jurisdictions.length],
-            court: courts[i % courts.length],
-            author: authors[i % authors.length],
-            publicationYear: 2000 + (i % 23),
-            category: categories[i % categories.length],
-            language: languages[i % languages.length],
-            country: countries[i % countries.length],
-            citations: Math.floor(Math.random() * 100)
-          });
-        }
-        
-        resolve(results);
-      }, 1000 + Math.random() * 1000); // Délai aléatoire pour simuler différents temps de réponse
-    });
   }
 
   /**
