@@ -1,5 +1,6 @@
+
 import { DATABASE_NAMES } from '../models/Database';
-import { SearchOptions, SearchResult, SearchHistory } from '../models/SearchResult';
+import { SearchOptions, SearchResult, SearchHistory, SearchFilter } from '../models/SearchResult';
 import { getAccessibleDatabases } from '../models/Database';
 import { searchAllSites, scrapingRateLimiter } from '../services/scrapingService';
 
@@ -11,22 +12,15 @@ class SearchController {
    * Effectue une recherche sur toutes les bases de données accessibles
    * @param {SearchOptions} options - Options de recherche
    * @returns {Promise<SearchResult[]>} Résultats de recherche
-   * @throws {Error} Si aucune base de données n'est accessible
+   * @throws {Error} Si aucune base de données n'est accessible ou si les limites de taux sont dépassées
    */
   async searchAllDatabases(options: SearchOptions): Promise<SearchResult[]> {
-    const accessibleDatabases = getAccessibleDatabases();
+    // Vérifier l'accès aux bases de données
+    const accessibleDatabases = this.validateDatabaseAccess();
     
-    if (accessibleDatabases.length === 0) {
-      throw new Error("Aucune base de données accessible. Veuillez fournir au moins un identifiant.");
-    }
-
     // Vérifier les limites de taux par requête
-    const rateLimitKey = options.query.toLowerCase().trim();
-    if (!scrapingRateLimiter.isActionAllowed(rateLimitKey)) {
-      const timeToWait = scrapingRateLimiter.getTimeToWait(rateLimitKey);
-      throw new Error(`Trop de recherches. Veuillez réessayer dans ${Math.ceil(timeToWait / 1000)} secondes.`);
-    }
-
+    this.checkRateLimits(options.query);
+    
     try {
       // Utilisation du service de scraping pour obtenir les résultats
       console.log(`Recherche via scraping pour la requête: ${options.query}`);
@@ -39,22 +33,71 @@ class SearchController {
       }
       
       // Trier par pertinence
-      const sortedResults = filteredResults.sort((a, b) => b.relevance - a.relevance);
+      const sortedResults = this.sortResultsByRelevance(filteredResults);
+      
+      // Ajouter la recherche à l'historique
+      this.addToSearchHistory(options.query, sortedResults.length);
       
       return sortedResults;
     } catch (error) {
-      console.error("Erreur lors de la recherche:", error);
-      throw new Error("Une erreur est survenue lors de la recherche. Veuillez réessayer.");
+      this.handleSearchError(error);
     }
+  }
+
+  /**
+   * Vérifie si des bases de données sont accessibles
+   * @returns {string[]} Liste des bases de données accessibles
+   * @throws {Error} Si aucune base de données n'est accessible
+   */
+  private validateDatabaseAccess(): string[] {
+    const accessibleDatabases = getAccessibleDatabases();
+    
+    if (accessibleDatabases.length === 0) {
+      throw new Error("Aucune base de données accessible. Veuillez fournir au moins un identifiant.");
+    }
+
+    return accessibleDatabases;
+  }
+
+  /**
+   * Vérifie les limites de taux pour la requête
+   * @param {string} query - Requête de recherche
+   * @throws {Error} Si les limites de taux sont dépassées
+   */
+  private checkRateLimits(query: string): void {
+    const rateLimitKey = query.toLowerCase().trim();
+    if (!scrapingRateLimiter.isActionAllowed(rateLimitKey)) {
+      const timeToWait = scrapingRateLimiter.getTimeToWait(rateLimitKey);
+      throw new Error(`Trop de recherches. Veuillez réessayer dans ${Math.ceil(timeToWait / 1000)} secondes.`);
+    }
+  }
+
+  /**
+   * Gère les erreurs de recherche
+   * @param {unknown} error - Erreur survenue
+   * @throws {Error} Une erreur formatée
+   */
+  private handleSearchError(error: unknown): never {
+    console.error("Erreur lors de la recherche:", error);
+    throw new Error("Une erreur est survenue lors de la recherche. Veuillez réessayer.");
+  }
+
+  /**
+   * Trie les résultats par pertinence
+   * @param {SearchResult[]} results - Résultats à trier
+   * @returns {SearchResult[]} Résultats triés
+   */
+  private sortResultsByRelevance(results: SearchResult[]): SearchResult[] {
+    return [...results].sort((a, b) => b.relevance - a.relevance);
   }
 
   /**
    * Filtre les résultats de recherche selon des critères
    * @param {SearchResult[]} results - Résultats à filtrer
-   * @param {Object} filters - Critères de filtrage
+   * @param {SearchFilter} filters - Critères de filtrage
    * @returns {SearchResult[]} Résultats filtrés
    */
-  filterResults(results: SearchResult[], filters: any): SearchResult[] {
+  filterResults(results: SearchResult[], filters: SearchFilter): SearchResult[] {
     return results.filter(result => {
       // Filtre par source
       if (filters.sources && filters.sources.length > 0) {

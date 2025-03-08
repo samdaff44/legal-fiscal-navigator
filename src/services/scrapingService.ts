@@ -115,7 +115,7 @@ const siteConfigs: Record<string, SiteConfig> = {
               category: category || 'Non catégorisé',
               language: 'Français',
               country: 'France',
-              citations: Math.floor(Math.random() * 20) // Cette information est rarement disponible
+              citations: Math.floor(Math.random() * 20) // Estimation aléatoire, à remplacer par une vraie valeur si disponible
             });
           });
           
@@ -212,7 +212,7 @@ const siteConfigs: Record<string, SiteConfig> = {
               category: category || 'Non catégorisé',
               language: 'Français',
               country: 'France',
-              citations: Math.floor(Math.random() * 15) // Cette information est rarement disponible
+              citations: Math.floor(Math.random() * 15) // Estimation aléatoire, à remplacer par une vraie valeur si disponible
             });
           });
           
@@ -309,7 +309,7 @@ const siteConfigs: Record<string, SiteConfig> = {
               category: category || 'Non catégorisé',
               language: 'Français',
               country: 'France',
-              citations: Math.floor(Math.random() * 10) // Cette information est rarement disponible
+              citations: Math.floor(Math.random() * 10) // Estimation aléatoire, à remplacer par une vraie valeur si disponible
             });
           });
           
@@ -329,7 +329,7 @@ const siteConfigs: Record<string, SiteConfig> = {
  */
 async function launchBrowser(): Promise<Browser> {
   return puppeteer.launch({
-    headless: true, // Utilise le mode headless standard (au lieu de "new")
+    headless: true, // Utilise le mode headless standard
     args: [
       '--no-sandbox',
       '--disable-setuid-sandbox',
@@ -512,7 +512,7 @@ async function scrapeSite(browser: Browser, site: string, query: string): Promis
       }
     }
     
-    // Extraction des données avec gestion du timeout
+    // Extraction des données
     console.log(`Lancement du scraping sur ${site} pour la requête: "${query}"`);
     try {
       const startTime = Date.now();

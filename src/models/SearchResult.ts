@@ -4,20 +4,29 @@
  */
 export interface SearchOptions {
   query: string;
-  filters?: {
-    date?: { start?: string; end?: string };
-    sources?: string[];
-    type?: string[];
-    jurisdiction?: string;
-    relevanceThreshold?: number;
-    court?: string;
-    author?: string;
-    publicationYear?: number;
-    category?: string[];
-    language?: string[];
-    country?: string;
-    maxResults?: number;
+  filters?: SearchFilter;
+}
+
+/**
+ * Structure pour les filtres de recherche
+ */
+export interface SearchFilter {
+  sources?: string[];
+  types?: string[];
+  dateRange?: { 
+    start?: string; 
+    end?: string 
   };
+  jurisdiction?: string;
+  court?: string;
+  author?: string;
+  publicationYear?: number;
+  categories?: string[];
+  languages?: string[];
+  country?: string;
+  relevanceThreshold?: number;
+  minCitations?: number;
+  maxResults?: number;
 }
 
 /**
