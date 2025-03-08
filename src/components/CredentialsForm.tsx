@@ -60,8 +60,8 @@ const CredentialsForm = () => {
       const connectedDatabases = await authController.login(credentials);
       
       toast({
-        title: "Connexion réussie",
-        description: `Vous êtes connecté à ${connectedDatabases.length} base${connectedDatabases.length > 1 ? 's' : ''} de données`,
+        title: "Identifiants enregistrés",
+        description: `Vos identifiants pour ${connectedDatabases.length} base${connectedDatabases.length > 1 ? 's' : ''} de données ont été enregistrés`,
         duration: 3000,
       });
       
@@ -69,7 +69,7 @@ const CredentialsForm = () => {
     } catch (error) {
       toast({
         title: "Erreur",
-        description: error instanceof Error ? error.message : "Une erreur est survenue lors de la connexion",
+        description: error instanceof Error ? error.message : "Une erreur est survenue lors de l'enregistrement des identifiants",
         variant: "destructive",
         duration: 3000,
       });
@@ -111,7 +111,8 @@ const CredentialsForm = () => {
         <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3 mb-6 flex items-start">
           <InfoIcon className="text-amber-600 dark:text-amber-400 h-5 w-5 mr-3 mt-0.5 flex-shrink-0" />
           <p className="text-sm text-amber-800 dark:text-amber-300">
-            Vous pouvez vous connecter avec les identifiants d'une seule base de données si nécessaire. Les recherches s'effectueront uniquement sur les bases de données pour lesquelles vous avez fourni des identifiants.
+            Vos identifiants seront utilisés pour accéder aux sites web via un navigateur automatisé. 
+            Les recherches s'effectueront uniquement sur les bases de données pour lesquelles vous avez fourni des identifiants valides.
           </p>
         </div>
       
@@ -188,7 +189,7 @@ const CredentialsForm = () => {
               className="w-full" 
               disabled={!isFormValid() || isSubmitting}
             >
-              {isSubmitting ? "Connexion..." : "Se connecter aux bases de données"}
+              {isSubmitting ? "Enregistrement..." : "Enregistrer les identifiants"}
             </Button>
           </div>
         </form>

@@ -1,7 +1,7 @@
 
 import puppeteer, { Browser, Page } from 'puppeteer';
 import { SearchResult } from '@/models/SearchResult';
-import { getAccessibleDatabases } from '@/models/Database';
+import { getAccessibleDatabases, getStoredCredentials } from '@/models/Database';
 
 /**
  * Configuration pour le scraping de chaque site
@@ -14,6 +14,10 @@ interface SiteConfig {
   excerptSelector: string;
   dateSelector: string;
   authorSelector?: string;
+  loginUrl?: string;
+  usernameSelector?: string;
+  passwordSelector?: string;
+  submitSelector?: string;
   extractData: (page: Page, query: string) => Promise<SearchResult[]>;
 }
 
@@ -29,6 +33,10 @@ const siteConfigs: Record<string, SiteConfig> = {
     excerptSelector: '.result-excerpt',
     dateSelector: '.result-date',
     authorSelector: '.result-author',
+    loginUrl: 'https://www.lexisnexis.fr/connexion',
+    usernameSelector: '#username',
+    passwordSelector: '#password',
+    submitSelector: 'button[type="submit"]',
     async extractData(page, query): Promise<SearchResult[]> {
       // En production, ceci serait une implémentation réelle de scraping
       // Pour cette démo, nous simulons des résultats
@@ -68,6 +76,10 @@ const siteConfigs: Record<string, SiteConfig> = {
     titleSelector: '.result-item-title',
     excerptSelector: '.result-item-excerpt',
     dateSelector: '.result-item-date',
+    loginUrl: 'https://www.dalloz.fr/connexion',
+    usernameSelector: '#user_login',
+    passwordSelector: '#user_pass',
+    submitSelector: '#wp-submit',
     async extractData(page, query): Promise<SearchResult[]> {
       // Simulation pour Dalloz
       await page.waitForTimeout(1500);
@@ -106,6 +118,10 @@ const siteConfigs: Record<string, SiteConfig> = {
     titleSelector: '.result-heading',
     excerptSelector: '.result-description',
     dateSelector: '.publication-date',
+    loginUrl: 'https://www.efl.fr/connexion',
+    usernameSelector: '#username',
+    passwordSelector: '#password',
+    submitSelector: 'button.btn-login',
     async extractData(page, query): Promise<SearchResult[]> {
       // Simulation pour EFL Francis Lefebvre
       await page.waitForTimeout(1200);
@@ -152,13 +168,64 @@ async function launchBrowser(): Promise<Browser> {
       '--disable-dev-shm-usage',
       '--disable-accelerated-2d-canvas',
       '--disable-gpu',
+      '--window-size=1920,1080',
     ],
     defaultViewport: { width: 1280, height: 800 }
   });
 }
 
 /**
- * Effectue le scraping d'un site spécifique
+ * Authentifie l'utilisateur sur un site
+ * @param {Page} page - Page Puppeteer
+ * @param {string} siteName - Nom du site
+ * @param {string} username - Nom d'utilisateur
+ * @param {string} password - Mot de passe
+ * @returns {Promise<boolean>} Succès de l'authentification
+ */
+async function authenticateOnSite(page: Page, siteName: string, username: string, password: string): Promise<boolean> {
+  const config = siteConfigs[siteName];
+  if (!config || !config.loginUrl || !config.usernameSelector || !config.passwordSelector || !config.submitSelector) {
+    console.error(`Configuration d'authentification manquante pour ${siteName}`);
+    return false;
+  }
+
+  try {
+    console.log(`Tentative d'authentification sur ${siteName}...`);
+    
+    // Accéder à la page de connexion
+    await page.goto(config.loginUrl, { waitUntil: 'networkidle2' });
+    
+    // Remplir le formulaire d'authentification
+    await page.type(config.usernameSelector, username);
+    await page.type(config.passwordSelector, password);
+    
+    // Soumettre le formulaire
+    await Promise.all([
+      page.click(config.submitSelector),
+      page.waitForNavigation({ waitUntil: 'networkidle2' })
+    ]);
+    
+    // Vérifier si l'authentification a réussi (à adapter selon le site)
+    // Dans un cas réel, il faudrait vérifier la présence d'éléments spécifiques après connexion
+    const isLoggedIn = await page.evaluate(() => {
+      return !document.querySelector('.login-error') && !document.querySelector('.error-message');
+    });
+    
+    if (isLoggedIn) {
+      console.log(`Authentification réussie sur ${siteName}`);
+    } else {
+      console.error(`Échec de l'authentification sur ${siteName}`);
+    }
+    
+    return isLoggedIn;
+  } catch (error) {
+    console.error(`Erreur lors de l'authentification sur ${siteName}:`, error);
+    return false;
+  }
+}
+
+/**
+ * Effectue le scraping d'un site spécifique avec authentification
  * @param {Browser} browser - Instance de navigateur Puppeteer
  * @param {string} site - Nom du site à scraper
  * @param {string} query - Requête de recherche
@@ -174,24 +241,56 @@ async function scrapeSite(browser: Browser, site: string, query: string): Promis
   const page = await browser.newPage();
   
   try {
-    // Configuration du user agent pour éviter la détection
-    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
+    // Configuration pour éviter la détection de bot
+    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36');
+    await page.setExtraHTTPHeaders({
+      'Accept-Language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7',
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8'
+    });
     
-    // Désactiver les images et les styles pour accélérer le chargement
+    // Désactiver certaines fonctionnalités pour accélérer le chargement mais pas toutes pour éviter la détection
     await page.setRequestInterception(true);
     page.on('request', (request) => {
-      if (['image', 'stylesheet', 'font'].includes(request.resourceType())) {
+      if (['image', 'font'].includes(request.resourceType())) {
         request.abort();
       } else {
         request.continue();
       }
     });
     
-    // Accès au site avec gestion du timeout
+    // Récupérer les identifiants stockés
+    const credentials = getStoredCredentials();
+    if (credentials) {
+      // Trouver le bon ensemble d'identifiants pour ce site
+      let dbKey: keyof typeof credentials | null = null;
+      if (site === 'Lexis Nexis') dbKey = 'database1';
+      else if (site === 'Dalloz') dbKey = 'database2';
+      else if (site === 'EFL Francis Lefebvre') dbKey = 'database3';
+      
+      // Authentification si les identifiants sont disponibles
+      if (dbKey && credentials[dbKey].username && credentials[dbKey].password) {
+        const isAuthenticated = await authenticateOnSite(
+          page, 
+          site, 
+          credentials[dbKey].username, 
+          credentials[dbKey].password
+        );
+        
+        if (!isAuthenticated) {
+          console.warn(`Impossible de s'authentifier sur ${site}, tentative de scraping sans authentification`);
+        }
+      }
+    }
+    
+    // Accès à la page de recherche avec gestion du timeout
+    const searchUrl = `${config.url}${config.searchPath}?q=${encodeURIComponent(query)}`;
     await Promise.race([
-      page.goto(`${config.url}${config.searchPath}?q=${encodeURIComponent(query)}`, { waitUntil: 'domcontentloaded' }),
-      new Promise((_, reject) => setTimeout(() => reject(new Error(`Timeout en accédant à ${site}`)), 15000))
+      page.goto(searchUrl, { waitUntil: 'networkidle2' }),
+      new Promise((_, reject) => setTimeout(() => reject(new Error(`Timeout en accédant à ${site}`)), 30000))
     ]);
+    
+    // Attendre que les résultats apparaissent
+    await page.waitForTimeout(2000); // Délai supplémentaire pour s'assurer que tout est chargé
     
     // Extraction des données
     const results = await config.extractData(page, query);
@@ -221,7 +320,17 @@ export async function searchAllSites(query: string): Promise<SearchResult[]> {
   const browser = await launchBrowser();
   
   try {
-    const scrapingPromises = accessibleDatabases.map(db => scrapeSite(browser, db, query));
+    const scrapingPromises = accessibleDatabases.map(db => {
+      // Ajouter un délai aléatoire pour éviter de surcharger et d'être détecté
+      const delay = Math.floor(Math.random() * 2000);
+      return new Promise<SearchResult[]>(resolve => {
+        setTimeout(async () => {
+          const results = await scrapeSite(browser, db, query);
+          resolve(results);
+        }, delay);
+      });
+    });
+    
     const scrapingResults = await Promise.allSettled(scrapingPromises);
     
     // Traiter les résultats, en prenant en compte les promesses rejetées
