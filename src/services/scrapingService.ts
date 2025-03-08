@@ -40,7 +40,7 @@ const siteConfigs: Record<string, SiteConfig> = {
     async extractData(page, query): Promise<SearchResult[]> {
       // En production, ceci serait une implémentation réelle de scraping
       // Pour cette démo, nous simulons des résultats
-      await page.waitForTimeout(1000); // Simulation de délai de chargement
+      await page.evaluate(() => new Promise(resolve => setTimeout(resolve, 1000))); // Remplace waitForTimeout
       
       console.log(`Scraping Lexis Nexis pour la requête: ${query}`);
       
@@ -82,7 +82,7 @@ const siteConfigs: Record<string, SiteConfig> = {
     submitSelector: '#wp-submit',
     async extractData(page, query): Promise<SearchResult[]> {
       // Simulation pour Dalloz
-      await page.waitForTimeout(1500);
+      await page.evaluate(() => new Promise(resolve => setTimeout(resolve, 1500))); // Remplace waitForTimeout
       
       console.log(`Scraping Dalloz pour la requête: ${query}`);
       
@@ -124,7 +124,7 @@ const siteConfigs: Record<string, SiteConfig> = {
     submitSelector: 'button.btn-login',
     async extractData(page, query): Promise<SearchResult[]> {
       // Simulation pour EFL Francis Lefebvre
-      await page.waitForTimeout(1200);
+      await page.evaluate(() => new Promise(resolve => setTimeout(resolve, 1200))); // Remplace waitForTimeout
       
       console.log(`Scraping EFL Francis Lefebvre pour la requête: ${query}`);
       
@@ -161,7 +161,7 @@ const siteConfigs: Record<string, SiteConfig> = {
  */
 async function launchBrowser(): Promise<Browser> {
   return puppeteer.launch({
-    headless: 'new', // Utilise le nouveau mode headless
+    headless: true, // Utilise le mode headless standard (au lieu de "new")
     args: [
       '--no-sandbox',
       '--disable-setuid-sandbox',
@@ -290,7 +290,7 @@ async function scrapeSite(browser: Browser, site: string, query: string): Promis
     ]);
     
     // Attendre que les résultats apparaissent
-    await page.waitForTimeout(2000); // Délai supplémentaire pour s'assurer que tout est chargé
+    await page.evaluate(() => new Promise(resolve => setTimeout(resolve, 2000))); // Remplace waitForTimeout
     
     // Extraction des données
     const results = await config.extractData(page, query);
