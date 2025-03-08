@@ -1,6 +1,6 @@
 
 import { CredentialsStore, saveCredentials } from '../models/Database';
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 /**
  * Contrôleur pour la gestion de l'authentification
