@@ -11,6 +11,7 @@ import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import { authController } from "./controllers/authController";
 import { useEffect, useState } from "react";
+import "./App.css";
 
 // Configuration du client pour React Query avec gestion optimisée du cache et des erreurs
 const queryClient = new QueryClient({

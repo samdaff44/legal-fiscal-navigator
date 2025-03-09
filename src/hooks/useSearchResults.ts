@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
-import { SearchResult } from '@/models/SearchResult';
+import { SearchResult, SearchOptions } from '@/models/SearchResult';
 import { searchController } from '@/controllers/search';
 import { getAccessibleDatabases } from '@/models/Database';
 import { SearchFilters } from '@/types/search';
@@ -49,7 +49,7 @@ export const useSearchResults = ({ query, filters, sortOrder }: UseSearchResults
         const searchResults = await searchController.searchAllDatabases({ 
           query,
           filters: filters || {},
-          sortOrder // Now correctly passing sortOrder to searchAllDatabases
+          sortOrder
         });
         setResults(searchResults);
         

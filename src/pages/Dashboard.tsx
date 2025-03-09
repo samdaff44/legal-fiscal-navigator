@@ -3,14 +3,16 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
 import SearchBar from '@/components/SearchBar';
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Database, Book, FileClock, Clock, CheckCircle, Search } from 'lucide-react';
+import { Database, Book, FileClock } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 import { getAccessibleDatabases } from '@/models/Database'; 
 import { searchController } from '@/controllers/search';
 import { authController } from '@/controllers/authController';
 import { SearchHistory, DatabaseStatus } from '@/models/SearchResult';
+import RecentSearches from '@/components/dashboard/RecentSearches';
+import SuggestedSearches from '@/components/dashboard/SuggestedSearches';
+import DatabaseStatusDisplay from '@/components/dashboard/DatabaseStatus';
 
 /**
  * Page de tableau de bord
@@ -81,18 +83,7 @@ const Dashboard = () => {
               pour vous fournir les résultats les plus pertinents.
             </p>
             
-            <div className="flex flex-wrap justify-center gap-3 mb-8">
-              {databasesStatus.map((db, index) => (
-                <div 
-                  key={index}
-                  className="bg-accent/30 rounded-full px-4 py-1.5 flex items-center text-sm"
-                  aria-label={`Statut de connexion: ${db.name}`}
-                >
-                  <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                  <span className="font-light">Connecté à {db.name}</span>
-                </div>
-              ))}
-            </div>
+            <DatabaseStatusDisplay databases={databasesStatus} />
             
             <div className="max-w-2xl mx-auto">
               <SearchBar />
@@ -101,77 +92,17 @@ const Dashboard = () => {
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
             <section className="animate-slide-in" style={{ animationDelay: "0.1s" }}>
-              <Card className="squarespace-card border-border/20 bg-card/50 overflow-hidden">
-                <CardHeader className="pb-2">
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-5 w-5 text-muted-foreground" />
-                    <CardTitle className="text-xl font-medium">Recherches récentes</CardTitle>
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-4 space-y-4">
-                  {recentSearches.length > 0 ? (
-                    recentSearches.map((search, index) => (
-                      <Button
-                        key={index}
-                        variant="outline"
-                        className="w-full justify-between bg-background hover:bg-accent/30 transition-all duration-200 h-auto py-3 px-4 border-border/30"
-                        onClick={() => handleHistorySearch(search.query)}
-                      >
-                        <div className="flex items-center gap-2">
-                          <Search className="h-4 w-4 text-muted-foreground" />
-                          <span className="font-light">{search.query}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <span>{search.results} résultats</span>
-                          <span>•</span>
-                          <span>{new Date(search.timestamp).toLocaleDateString('fr-FR')}</span>
-                        </div>
-                      </Button>
-                    ))
-                  ) : (
-                    <div className="bg-accent/20 p-6 rounded-lg text-center">
-                      <p className="text-muted-foreground font-light">Aucune recherche récente</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+              <RecentSearches 
+                searches={recentSearches} 
+                onSearchSelect={handleHistorySearch} 
+              />
             </section>
             
             <section className="animate-slide-in" style={{ animationDelay: "0.2s" }}>
-              <Card className="squarespace-card border-border/20 bg-card/50 overflow-hidden">
-                <CardHeader className="pb-2">
-                  <div className="flex items-center gap-2">
-                    <Book className="h-5 w-5 text-muted-foreground" />
-                    <CardTitle className="text-xl font-medium">Suggestions</CardTitle>
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
-                    {suggestedQueries.map((query, index) => (
-                      <Button
-                        key={index}
-                        variant="outline"
-                        className="justify-start hover:bg-accent/30 transition-all duration-200 border-border/30 h-auto py-3"
-                        onClick={() => handleHistorySearch(query)}
-                      >
-                        <FileClock className="h-4 w-4 mr-2 text-muted-foreground" />
-                        <span className="font-light text-sm">{query}</span>
-                      </Button>
-                    ))}
-                  </div>
-                  
-                  <div className="bg-accent/20 rounded-lg p-6 mt-4">
-                    <h3 className="font-medium mb-2">Besoin d'aide pour votre recherche?</h3>
-                    <p className="text-sm text-muted-foreground mb-4 font-light">
-                      Utilisez des opérateurs booléens (ET, OU, SAUF) pour affiner vos résultats.
-                      Placez des expressions entre guillemets pour une correspondance exacte.
-                    </p>
-                    <Button variant="link" className="text-primary p-0 font-light">
-                      Voir plus d'astuces de recherche
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+              <SuggestedSearches 
+                queries={suggestedQueries} 
+                onQuerySelect={handleHistorySearch} 
+              />
             </section>
           </div>
         </div>
