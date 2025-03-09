@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { SearchResult } from '@/models/SearchResult';
-import { searchController } from '@/controllers/searchController';
+import { searchController } from '@/controllers/search';
 import { getAccessibleDatabases } from '@/models/Database';
 import { SearchFilters } from '@/types/search';
 

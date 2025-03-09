@@ -6,7 +6,7 @@
  * mais ne seront pas exécutés dans cette démo.
  */
 
-import { searchController } from '../controllers/searchController';
+import { searchController } from '../controllers/search';
 import { SearchResult } from '../models/SearchResult';
 import '@types/jest';
 
