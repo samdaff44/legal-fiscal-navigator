@@ -1,10 +1,10 @@
-
 /**
  * Modèle représentant les options de recherche
  */
 export interface SearchOptions {
   query: string;
   filters?: SearchFilter;
+  sortOrder?: string;  // Adding sortOrder property to fix the error
 }
 
 /**

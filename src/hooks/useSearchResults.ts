@@ -49,7 +49,7 @@ export const useSearchResults = ({ query, filters, sortOrder }: UseSearchResults
         const searchResults = await searchController.searchAllDatabases({ 
           query,
           filters: filters || {},
-          sortOrder
+          sortOrder // Now correctly passing sortOrder to searchAllDatabases
         });
         setResults(searchResults);
         

@@ -1,4 +1,3 @@
-
 import { DATABASE_NAMES } from '../models/Database';
 import { SearchOptions, SearchResult, SearchHistory, SearchFilter } from '../models/SearchResult';
 import { getAccessibleDatabases } from '../models/Database';
@@ -32,8 +31,13 @@ class SearchController {
         filteredResults = this.filterResults(searchResults, options.filters);
       }
       
-      // Trier par pertinence
-      const sortedResults = this.sortResultsByRelevance(filteredResults);
+      // Trier les résultats selon l'option de tri fournie
+      let sortedResults = this.sortResultsByRelevance(filteredResults);
+      
+      // Tri supplémentaire basé sur l'option fournie
+      if (options.sortOrder && options.sortOrder !== 'relevance') {
+        sortedResults = this.applySortOrder(sortedResults, options.sortOrder);
+      }
       
       // Ajouter la recherche à l'historique
       this.addToSearchHistory(options.query, sortedResults.length);
@@ -89,6 +93,27 @@ class SearchController {
    */
   private sortResultsByRelevance(results: SearchResult[]): SearchResult[] {
     return [...results].sort((a, b) => b.relevance - a.relevance);
+  }
+
+  /**
+   * Applique un tri spécifique aux résultats
+   * @param {SearchResult[]} results - Résultats à trier
+   * @param {string} sortOrder - Ordre de tri à appliquer
+   * @returns {SearchResult[]} Résultats triés
+   */
+  private applySortOrder(results: SearchResult[], sortOrder: string): SearchResult[] {
+    switch (sortOrder) {
+      case 'date-desc':
+        return [...results].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      case 'date-asc':
+        return [...results].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      case 'source':
+        return [...results].sort((a, b) => a.source.localeCompare(b.source));
+      case 'citations':
+        return [...results].sort((a, b) => (b.citations || 0) - (a.citations || 0));
+      default:
+        return results;
+    }
   }
 
   /**
