@@ -18,6 +18,18 @@ export interface ResultItem {
   citations?: number;
 }
 
+export interface SearchFilters {
+  sources?: string[];
+  dateFrom?: string;
+  dateTo?: string;
+  types?: string[];
+  sortOption?: string;
+  language?: string;
+  country?: string;
+}
+
 export interface ResultsDisplayProps {
   query: string;
+  filters?: SearchFilters;
+  sortOrder?: string;
 }

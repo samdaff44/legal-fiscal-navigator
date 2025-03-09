@@ -4,9 +4,12 @@ import { useToast } from "@/hooks/use-toast";
 import { SearchResult } from '@/models/SearchResult';
 import { searchController } from '@/controllers/searchController';
 import { getAccessibleDatabases } from '@/models/Database';
+import { SearchFilters } from '@/types/search';
 
 interface UseSearchResultsProps {
   query: string;
+  filters?: SearchFilters;
+  sortOrder?: string;
 }
 
 /**
@@ -14,7 +17,7 @@ interface UseSearchResultsProps {
  * @param {UseSearchResultsProps} props - Propriétés de recherche
  * @returns {Object} État et fonctions pour gérer les résultats
  */
-export const useSearchResults = ({ query }: UseSearchResultsProps) => {
+export const useSearchResults = ({ query, filters, sortOrder }: UseSearchResultsProps) => {
   const { toast } = useToast();
   const [results, setResults] = useState<SearchResult[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -43,7 +46,11 @@ export const useSearchResults = ({ query }: UseSearchResultsProps) => {
           duration: 3000,
         });
         
-        const searchResults = await searchController.searchAllDatabases({ query });
+        const searchResults = await searchController.searchAllDatabases({ 
+          query,
+          filters: filters || {},
+          sortOrder
+        });
         setResults(searchResults);
         
         // Ajoute la recherche à l'historique
@@ -70,7 +77,7 @@ export const useSearchResults = ({ query }: UseSearchResultsProps) => {
     };
     
     fetchResults();
-  }, [query, toast]);
+  }, [query, filters, sortOrder, toast]);
 
   /**
    * Bascule l'état d'expansion d'un résultat

@@ -10,7 +10,7 @@ import { Database } from 'lucide-react';
  * Composant d'affichage des résultats de recherche (Vue)
  * @param {ResultsDisplayProps} props - Propriétés du composant
  */
-const ResultsDisplay = ({ query }: ResultsDisplayProps) => {
+const ResultsDisplay = ({ query, filters, sortOrder }: ResultsDisplayProps) => {
   const {
     results,
     isLoading,
@@ -19,7 +19,7 @@ const ResultsDisplay = ({ query }: ResultsDisplayProps) => {
     toggleExpand,
     handleCopy,
     searchedDatabases
-  } = useSearchResults({ query });
+  } = useSearchResults({ query, filters, sortOrder });
 
   if (isLoading) {
     return <SearchLoadingState />;

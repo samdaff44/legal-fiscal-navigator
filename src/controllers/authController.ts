@@ -187,8 +187,8 @@ class AuthController {
         })
       ]);
       
-      // Vérifier si la connexion a réussi
-      await page.waitForTimeout(1000); // Remplacer par setTimeout pour contourner l'erreur
+      // Remplacer waitForTimeout par un délai via setTimeout et une promesse
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
       // Vérifie la présence d'éléments qui indiquent une connexion réussie
       const isConnected = await page.evaluate((selector) => {
