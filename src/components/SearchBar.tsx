@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import AdvancedFilters from './AdvancedFilters';
-import { searchController } from '@/controllers/searchController';
+import { searchController } from '@/controllers/search';
 import { authController } from '@/controllers/authController';
 import { SearchHistory } from '@/models/SearchResult';
 

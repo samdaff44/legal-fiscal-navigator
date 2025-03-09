@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { ArrowLeft, Database, Book, FileClock, Clock, CheckCircle, Search } from 'lucide-react';
 import { useToast } from "@/components/ui/use-toast";
 import { getAccessibleDatabases } from '@/models/Database'; 
-import { searchController } from '@/controllers/searchController';
+import { searchController } from '@/controllers/search';
 import { authController } from '@/controllers/authController';
 import { SearchHistory, DatabaseStatus } from '@/models/SearchResult';
 
