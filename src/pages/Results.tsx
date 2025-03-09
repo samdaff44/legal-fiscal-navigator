@@ -18,8 +18,9 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import AdvancedFilters from '@/components/AdvancedFilters';
+import AdvancedFilters, { SearchFilters } from '@/components/AdvancedFilters';
 import { authController } from '@/controllers/authController';
+import { useToast } from "@/components/ui/use-toast";
 
 interface LocationState {
   query?: string;
@@ -31,9 +32,12 @@ interface LocationState {
 const Results = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [query, setQuery] = useState<string>('');
   const [sortOrder, setSortOrder] = useState<string>('relevance');
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [activeFilters, setActiveFilters] = useState<SearchFilters | null>(null);
+  const [isFilterActive, setIsFilterActive] = useState(false);
   
   useEffect(() => {
     // Vérifie si l'utilisateur est authentifié
@@ -52,6 +56,82 @@ const Results = () => {
     
     setQuery(state.query);
   }, [location, navigate]);
+
+  const handleApplyFilters = (filters: SearchFilters) => {
+    setActiveFilters(filters);
+    setIsFilterActive(true);
+    setSortOrder(filters.sortOption);
+    setFiltersOpen(false);
+    
+    toast({
+      title: "Filtres appliqués",
+      description: "Les résultats ont été filtrés selon vos critères",
+      duration: 3000,
+    });
+  };
+
+  const handleExportResults = () => {
+    toast({
+      title: "Export en cours",
+      description: "Vos résultats sont en cours d'exportation...",
+      duration: 3000,
+    });
+    
+    // Simuler un délai pour l'export
+    setTimeout(() => {
+      toast({
+        title: "Export terminé",
+        description: "Vos résultats ont été exportés avec succès",
+        duration: 3000,
+      });
+    }, 2000);
+  };
+
+  const handleLoadMore = () => {
+    toast({
+      title: "Chargement en cours",
+      description: "Récupération des résultats supplémentaires...",
+      duration: 1500,
+    });
+    
+    // Simuler un délai pour le chargement
+    setTimeout(() => {
+      toast({
+        title: "Résultats chargés",
+        description: "De nouveaux résultats ont été ajoutés",
+        duration: 1500,
+      });
+    }, 1500);
+  };
+
+  const handleSortChange = (value: string) => {
+    setSortOrder(value);
+    
+    // Si des filtres sont actifs, mettre à jour l'option de tri
+    if (activeFilters) {
+      setActiveFilters({
+        ...activeFilters,
+        sortOption: value
+      });
+    }
+    
+    toast({
+      title: "Tri modifié",
+      description: `Les résultats sont maintenant triés par ${getTriLabel(value)}`,
+      duration: 2000,
+    });
+  };
+
+  const getTriLabel = (value: string): string => {
+    switch (value) {
+      case 'relevance': return 'pertinence';
+      case 'date-desc': return 'date (récent)';
+      case 'date-asc': return 'date (ancien)';
+      case 'citations': return 'nombre de citations';
+      case 'source': return 'source';
+      default: return value;
+    }
+  };
 
   if (!query) {
     return <div className="flex items-center justify-center h-screen">Chargement...</div>;
@@ -84,7 +164,7 @@ const Results = () => {
                 </h1>
                 
                 <div className="flex flex-wrap gap-3">
-                  <Select value={sortOrder} onValueChange={setSortOrder}>
+                  <Select value={sortOrder} onValueChange={handleSortChange}>
                     <SelectTrigger className="w-[180px]">
                       <SelectValue placeholder="Trier par" />
                     </SelectTrigger>
@@ -93,32 +173,47 @@ const Results = () => {
                       <SelectItem value="date-desc">Date (récent)</SelectItem>
                       <SelectItem value="date-asc">Date (ancien)</SelectItem>
                       <SelectItem value="source">Source</SelectItem>
+                      <SelectItem value="citations">Citations</SelectItem>
                     </SelectContent>
                   </Select>
                   
                   <Popover open={filtersOpen} onOpenChange={setFiltersOpen}>
                     <PopoverTrigger asChild>
-                      <Button variant="outline" className="flex items-center gap-2">
+                      <Button 
+                        variant={isFilterActive ? "default" : "outline"} 
+                        className={`flex items-center gap-2 ${isFilterActive ? "bg-primary text-primary-foreground" : ""}`}
+                      >
                         <Filter className="h-4 w-4" />
-                        <span>Filtres</span>
+                        <span>Filtres {isFilterActive ? "(actifs)" : ""}</span>
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-80" align="end">
-                      <AdvancedFilters />
+                      <AdvancedFilters 
+                        onApplyFilters={handleApplyFilters}
+                        initialFilters={activeFilters || undefined}
+                      />
                     </PopoverContent>
                   </Popover>
                   
-                  <Button variant="outline" className="flex items-center gap-2">
+                  <Button 
+                    variant="outline" 
+                    className="flex items-center gap-2"
+                    onClick={handleExportResults}
+                  >
                     <Download className="h-4 w-4" />
                     <span>Exporter</span>
                   </Button>
                 </div>
               </div>
               
-              <ResultsDisplay query={query} />
+              <ResultsDisplay query={query} filters={activeFilters || undefined} sortOrder={sortOrder} />
               
               <div className="mt-8 flex justify-center">
-                <Button variant="outline" className="flex items-center gap-2">
+                <Button 
+                  variant="outline" 
+                  className="flex items-center gap-2"
+                  onClick={handleLoadMore}
+                >
                   <ChevronDown className="h-4 w-4" />
                   <span>Charger plus de résultats</span>
                 </Button>

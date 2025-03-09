@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
@@ -15,36 +16,31 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { ArrowLeft, Database, Download, Save, Trash2, User, Lock, CheckCircle } from 'lucide-react';
-
-interface Credentials {
-  database1: {
-    username: string;
-    password: string;
-  };
-  database2: {
-    username: string;
-    password: string;
-  };
-  database3: {
-    username: string;
-    password: string;
-  };
-}
-
-const DATABASE_NAMES = {
-  database1: "Lexis Nexis",
-  database2: "Dalloz",
-  database3: "EFL Francis Lefebvre"
-};
+import { 
+  ArrowLeft, Database, Download, Save, Trash2, User, Lock, 
+  CheckCircle, LogOut, Shield
+} from 'lucide-react';
+import { CredentialsStore, DATABASE_NAMES } from '@/models/Database';
+import { authController } from '@/controllers/authController';
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const Settings = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [credentials, setCredentials] = useState<Credentials>({
-    database1: { username: "", password: "" },
-    database2: { username: "", password: "" },
-    database3: { username: "", password: "" }
+  const [credentials, setCredentials] = useState<CredentialsStore>({
+    database1: { username: "", password: "", url: "" },
+    database2: { username: "", password: "", url: "" },
+    database3: { username: "", password: "", url: "" }
   });
   const [showPasswords, setShowPasswords] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -52,10 +48,18 @@ const Settings = () => {
     autoSaveSearches: true,
     defaultSearchEngine: 'all',
     resultsPerPage: '20',
-    includeExternalDatabases: false
+    includeExternalDatabases: false,
+    enableSecureMode: true,
+    sessionTimeout: '30'
   });
 
   useEffect(() => {
+    // Vérifie si l'utilisateur est authentifié
+    if (!authController.isAuthenticated()) {
+      navigate('/');
+      return;
+    }
+    
     const savedCredentials = localStorage.getItem('databaseCredentials');
     if (savedCredentials) {
       setCredentials(JSON.parse(savedCredentials));
@@ -65,7 +69,7 @@ const Settings = () => {
   }, [navigate]);
 
   const handleCredentialChange = (
-    db: keyof Credentials,
+    db: keyof CredentialsStore,
     field: "username" | "password",
     value: string
   ) => {
@@ -105,21 +109,49 @@ const Settings = () => {
   };
 
   const clearCredentials = () => {
-    const confirmed = window.confirm(
-      "Êtes-vous sûr de vouloir supprimer tous vos identifiants ? Cette action est irréversible."
-    );
+    authController.logout();
     
-    if (confirmed) {
-      localStorage.removeItem('databaseCredentials');
+    toast({
+      title: "Déconnexion réussie",
+      description: "Toutes vos informations d'identification ont été effacées",
+      duration: 3000,
+    });
+    
+    navigate('/');
+  };
+
+  const logoutFromDatabase = (db: keyof CredentialsStore) => {
+    const success = authController.logoutFrom(db);
+    
+    if (success) {
+      // Mettre à jour l'état local
+      const savedCredentials = localStorage.getItem('databaseCredentials');
+      
+      if (savedCredentials) {
+        setCredentials(JSON.parse(savedCredentials));
+      } else {
+        // Si aucune base de données n'est connectée, rediriger vers la page de connexion
+        navigate('/');
+        return;
+      }
       
       toast({
-        title: "Identifiants supprimés",
-        description: "Toutes vos informations d'identification ont été effacées",
+        title: "Déconnexion réussie",
+        description: `Vous avez été déconnecté de ${DATABASE_NAMES[db]}`,
         duration: 3000,
       });
-      
-      navigate('/');
+    } else {
+      toast({
+        title: "Erreur",
+        description: `Impossible de vous déconnecter de ${DATABASE_NAMES[db]}`,
+        variant: "destructive",
+        duration: 3000,
+      });
     }
+  };
+
+  const isConnectedToDatabase = (db: keyof CredentialsStore): boolean => {
+    return credentials[db].username !== "" && credentials[db].password !== "";
   };
 
   return (
@@ -143,6 +175,7 @@ const Settings = () => {
             <TabsList className="mb-8">
               <TabsTrigger value="credentials">Identifiants</TabsTrigger>
               <TabsTrigger value="preferences">Préférences</TabsTrigger>
+              <TabsTrigger value="security">Sécurité</TabsTrigger>
               <TabsTrigger value="export">Export & Sauvegarde</TabsTrigger>
             </TabsList>
             
@@ -158,13 +191,30 @@ const Settings = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  {(Object.keys(credentials) as Array<keyof Credentials>).map((db) => (
+                  {(Object.keys(credentials) as Array<keyof CredentialsStore>).map((db) => (
                     <div key={db} className="space-y-4 p-4 border rounded-lg bg-secondary/30">
                       <div className="flex items-center justify-between">
                         <h3 className="text-lg font-medium">{DATABASE_NAMES[db]}</h3>
-                        <div className="flex items-center">
-                          <CheckCircle className="h-4 w-4 text-green-500 mr-1" />
-                          <span className="text-sm text-green-500">Connecté</span>
+                        <div className="flex items-center gap-2">
+                          {isConnectedToDatabase(db) ? (
+                            <>
+                              <div className="flex items-center">
+                                <CheckCircle className="h-4 w-4 text-green-500 mr-1" />
+                                <span className="text-sm text-green-500">Connecté</span>
+                              </div>
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                className="ml-2 text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600"
+                                onClick={() => logoutFromDatabase(db)}
+                              >
+                                <LogOut className="h-3.5 w-3.5 mr-1" />
+                                Déconnecter
+                              </Button>
+                            </>
+                          ) : (
+                            <span className="text-sm text-muted-foreground">Non connecté</span>
+                          )}
                         </div>
                       </div>
                       
@@ -209,14 +259,29 @@ const Settings = () => {
                   </div>
                 </CardContent>
                 <CardFooter className="flex justify-between">
-                  <Button 
-                    variant="destructive" 
-                    onClick={clearCredentials}
-                    className="flex items-center"
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Supprimer tous les identifiants
-                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button 
+                        variant="destructive" 
+                        className="flex items-center"
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Déconnexion complète
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Êtes-vous sûr ?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Cette action va vous déconnecter de toutes les bases de données et supprimer tous vos identifiants. Cette action est irréversible.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Annuler</AlertDialogCancel>
+                        <AlertDialogAction onClick={clearCredentials}>Confirmer</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                   <Button 
                     onClick={saveCredentials} 
                     disabled={isSaving}
@@ -262,8 +327,8 @@ const Settings = () => {
                       >
                         <option value="all">Toutes les bases de données</option>
                         <option value="lexisnexis">LexisNexis uniquement</option>
-                        <option value="westlaw">Westlaw uniquement</option>
-                        <option value="datafiscal">DataFiscal uniquement</option>
+                        <option value="dalloz">Dalloz uniquement</option>
+                        <option value="efl">EFL Francis Lefebvre uniquement</option>
                       </select>
                     </div>
                     
@@ -305,6 +370,79 @@ const Settings = () => {
                     });
                   }}>
                     Sauvegarder les préférences
+                  </Button>
+                </CardFooter>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="security" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <Shield className="mr-2 h-5 w-5 text-primary" />
+                    <span>Paramètres de sécurité</span>
+                  </CardTitle>
+                  <CardDescription>
+                    Configurez les options de sécurité pour protéger vos données
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label>Mode sécurisé</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Active des protections supplémentaires pour vos sessions
+                      </p>
+                    </div>
+                    <Switch
+                      checked={settings.enableSecureMode}
+                      onCheckedChange={(value) => handleSettingChange('enableSecureMode', value)}
+                    />
+                  </div>
+                  
+                  <div className="space-y-4 border-t pt-6">
+                    <div className="space-y-2">
+                      <Label htmlFor="session-timeout">Expiration de session (minutes)</Label>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        Durée après laquelle vous serez automatiquement déconnecté
+                      </p>
+                      <select
+                        id="session-timeout"
+                        value={settings.sessionTimeout}
+                        onChange={(e) => handleSettingChange('sessionTimeout', e.target.value)}
+                        className="w-full rounded-md border border-input bg-background px-3 py-2"
+                        disabled={!settings.enableSecureMode}
+                      >
+                        <option value="15">15 minutes</option>
+                        <option value="30">30 minutes</option>
+                        <option value="60">1 heure</option>
+                        <option value="120">2 heures</option>
+                      </select>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+                    <h3 className="font-medium flex items-center">
+                      <Shield className="h-4 w-4 mr-2 text-amber-600" />
+                      Recommandations de sécurité
+                    </h3>
+                    <ul className="list-disc ml-5 space-y-1 text-sm text-muted-foreground">
+                      <li>Utilisez des mots de passe forts et uniques pour chaque base de données</li>
+                      <li>Activez le mode sécurisé pour une protection optimale</li>
+                      <li>Ne partagez pas vos identifiants avec d'autres personnes</li>
+                      <li>Déconnectez-vous lorsque vous n'utilisez plus l'application</li>
+                    </ul>
+                  </div>
+                </CardContent>
+                <CardFooter>
+                  <Button onClick={() => {
+                    toast({
+                      title: "Paramètres de sécurité sauvegardés",
+                      description: "Vos préférences de sécurité ont été mises à jour",
+                      duration: 3000,
+                    });
+                  }}>
+                    Sauvegarder les paramètres de sécurité
                   </Button>
                 </CardFooter>
               </Card>

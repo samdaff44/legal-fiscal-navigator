@@ -1,12 +1,25 @@
 
 import { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { Search, Settings, Database, Home } from 'lucide-react';
+import { Search, Settings, Database, Home, LogOut } from 'lucide-react';
+import { authController } from '@/controllers/authController';
+import { useToast } from "@/components/ui/use-toast";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const Header = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { toast } = useToast();
   const [scrolled, setScrolled] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   
   useEffect(() => {
     const handleScroll = () => {
@@ -16,6 +29,21 @@ const Header = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  useEffect(() => {
+    // Vérifier si l'utilisateur est authentifié
+    setIsAuthenticated(authController.isAuthenticated());
+  }, [location]);
+
+  const handleLogout = () => {
+    authController.logout();
+    toast({
+      title: "Déconnexion réussie",
+      description: "Vous avez été déconnecté de toutes les bases de données",
+      duration: 3000,
+    });
+    navigate('/');
+  };
 
   return (
     <header 
@@ -37,7 +65,7 @@ const Header = () => {
         </Link>
         
         <nav className="hidden md:flex items-center gap-8">
-          {location.pathname !== '/' && (
+          {location.pathname !== '/' && isAuthenticated && (
             <>
               <NavLink to="/dashboard" icon={<Home size={18} />} label="Accueil" pathname={location.pathname} />
               <NavLink to="/results" icon={<Search size={18} />} label="Recherches" pathname={location.pathname} />
@@ -46,12 +74,35 @@ const Header = () => {
           )}
         </nav>
         
-        {location.pathname === '/' && (
+        {location.pathname === '/' && !isAuthenticated && (
           <Button variant="outline" asChild className="border-border/30 hover:border-border hover:bg-accent/50">
             <Link to="/dashboard" className="flex items-center gap-2">
               <span className="font-light">Explorer</span>
             </Link>
           </Button>
+        )}
+
+        {isAuthenticated && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="flex items-center">
+                <span className="hidden md:inline-block mr-2">Options</span>
+                <Database className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Mon compte</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => navigate('/settings')}>
+                <Settings className="mr-2 h-4 w-4" />
+                <span>Paramètres</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleLogout} className="text-red-500 focus:text-red-500">
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Déconnexion</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
       </div>
     </header>

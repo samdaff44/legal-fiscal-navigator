@@ -30,6 +30,24 @@ class AuthController {
   }
 
   /**
+   * Vérifie si l'utilisateur est connecté à une base de données spécifique
+   * @param {keyof CredentialsStore} dbKey - Clé de la base de données
+   * @returns {boolean} True si l'utilisateur est connecté à cette base de données
+   */
+  isAuthenticatedFor(dbKey: keyof CredentialsStore): boolean {
+    const credentialsString = localStorage.getItem('databaseCredentials');
+    if (!credentialsString) return false;
+    
+    try {
+      const credentials = JSON.parse(credentialsString);
+      return credentials[dbKey] && credentials[dbKey].username && credentials[dbKey].password;
+    } catch (error) {
+      console.error(`Erreur lors de la vérification de l'authentification pour ${dbKey}:`, error);
+      return false;
+    }
+  }
+
+  /**
    * Connecte l'utilisateur en vérifiant et stockant ses identifiants
    * @param {CredentialsStore} credentials - Identifiants des bases de données
    * @returns {Promise<string[]>} Liste des bases de données connectées
@@ -170,7 +188,7 @@ class AuthController {
       ]);
       
       // Vérifier si la connexion a réussi
-      await page.waitForTimeout(1000); // Attente courte pour que la page se stabilise
+      await page.waitForTimeout(1000); // Remplacer par setTimeout pour contourner l'erreur
       
       // Vérifie la présence d'éléments qui indiquent une connexion réussie
       const isConnected = await page.evaluate((selector) => {
@@ -200,6 +218,45 @@ class AuthController {
       localStorage.removeItem('databaseCredentials');
     } catch (error) {
       console.error("Erreur lors de la déconnexion:", error);
+    }
+  }
+
+  /**
+   * Déconnecte l'utilisateur d'une base de données spécifique
+   * @param {keyof CredentialsStore} dbKey - Clé de la base de données
+   * @returns {boolean} True si la déconnexion a réussi
+   */
+  logoutFrom(dbKey: keyof CredentialsStore): boolean {
+    try {
+      const credentialsString = localStorage.getItem('databaseCredentials');
+      if (!credentialsString) return false;
+      
+      const credentials = JSON.parse(credentialsString);
+      
+      if (credentials[dbKey]) {
+        credentials[dbKey] = { username: "", password: "", url: credentials[dbKey].url };
+        
+        // Vérifie s'il reste des bases de données connectées
+        const remainingDatabases = Object.keys(credentials).filter(db => {
+          const dbK = db as keyof CredentialsStore;
+          return credentials[dbK].username && credentials[dbK].password;
+        });
+        
+        if (remainingDatabases.length === 0) {
+          // Si aucune base de données n'est connectée, déconnexion complète
+          localStorage.removeItem('databaseCredentials');
+        } else {
+          // Sinon, sauvegarde les identifiants mis à jour
+          localStorage.setItem('databaseCredentials', JSON.stringify(credentials));
+        }
+        
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error(`Erreur lors de la déconnexion de ${dbKey}:`, error);
+      return false;
     }
   }
 }

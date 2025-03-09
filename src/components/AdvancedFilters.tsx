@@ -1,4 +1,5 @@
-import { useState } from 'react';
+
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -28,8 +29,47 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { useToast } from "@/components/ui/use-toast";
 
-const AdvancedFilters = () => {
+export interface SearchFilters {
+  documentTypes: string[];
+  dateRange: { from?: Date; to?: Date };
+  jurisdiction?: string;
+  court?: string;
+  author: string;
+  publicationYears: number[];
+  categories: string[];
+  languages: string[];
+  country?: string;
+  relevanceThreshold: number;
+  citationsThreshold: number;
+  sortOption: string;
+  maxResults: number;
+}
+
+interface AdvancedFiltersProps {
+  onApplyFilters?: (filters: SearchFilters) => void;
+  initialFilters?: Partial<SearchFilters>;
+}
+
+const defaultFilters: SearchFilters = {
+  documentTypes: [],
+  dateRange: {},
+  jurisdiction: undefined,
+  court: undefined,
+  author: "",
+  publicationYears: [2000, 2023],
+  categories: [],
+  languages: [],
+  country: undefined,
+  relevanceThreshold: 70,
+  citationsThreshold: 0,
+  sortOption: "relevance",
+  maxResults: 50
+};
+
+const AdvancedFilters = ({ onApplyFilters, initialFilters }: AdvancedFiltersProps) => {
+  const { toast } = useToast();
   const [documentTypes, setDocumentTypes] = useState<string[]>([]);
   const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({});
   const [jurisdiction, setJurisdiction] = useState<string | undefined>();
@@ -43,6 +83,26 @@ const AdvancedFilters = () => {
   const [citationsThreshold, setCitationsThreshold] = useState([0]);
   const [sortOption, setSortOption] = useState<string>("relevance");
   const [maxResults, setMaxResults] = useState<number>(50);
+  const [activeAccordions, setActiveAccordions] = useState<string[]>(["documentType", "date", "sort"]);
+
+  // Initialiser les filtres avec les valeurs par défaut ou les valeurs fournies
+  useEffect(() => {
+    if (initialFilters) {
+      if (initialFilters.documentTypes) setDocumentTypes(initialFilters.documentTypes);
+      if (initialFilters.dateRange) setDateRange(initialFilters.dateRange);
+      if (initialFilters.jurisdiction) setJurisdiction(initialFilters.jurisdiction);
+      if (initialFilters.court) setCourt(initialFilters.court);
+      if (initialFilters.author) setAuthor(initialFilters.author);
+      if (initialFilters.publicationYears) setPublicationYears(initialFilters.publicationYears);
+      if (initialFilters.categories) setCategories(initialFilters.categories);
+      if (initialFilters.languages) setLanguages(initialFilters.languages);
+      if (initialFilters.country) setCountry(initialFilters.country);
+      if (initialFilters.relevanceThreshold) setRelevanceThreshold([initialFilters.relevanceThreshold]);
+      if (initialFilters.citationsThreshold) setCitationsThreshold([initialFilters.citationsThreshold]);
+      if (initialFilters.sortOption) setSortOption(initialFilters.sortOption);
+      if (initialFilters.maxResults) setMaxResults(initialFilters.maxResults);
+    }
+  }, [initialFilters]);
 
   const handleDocumentTypeChange = (type: string) => {
     setDocumentTypes(prev =>
@@ -82,6 +142,48 @@ const AdvancedFilters = () => {
     setCitationsThreshold([0]);
     setSortOption("relevance");
     setMaxResults(50);
+
+    toast({
+      title: "Filtres réinitialisés",
+      description: "Tous les filtres ont été réinitialisés à leurs valeurs par défaut",
+      duration: 3000,
+    });
+  };
+
+  const applyFilters = () => {
+    const filters: SearchFilters = {
+      documentTypes,
+      dateRange,
+      jurisdiction,
+      court,
+      author,
+      publicationYears,
+      categories,
+      languages,
+      country,
+      relevanceThreshold: relevanceThreshold[0],
+      citationsThreshold: citationsThreshold[0],
+      sortOption,
+      maxResults
+    };
+
+    if (onApplyFilters) {
+      onApplyFilters(filters);
+    }
+
+    toast({
+      title: "Filtres appliqués",
+      description: "Vos filtres de recherche ont été appliqués avec succès",
+      duration: 3000,
+    });
+  };
+
+  const handleAccordionChange = (value: string) => {
+    setActiveAccordions(prev => 
+      prev.includes(value) 
+        ? prev.filter(item => item !== value)
+        : [...prev, value]
+    );
   };
 
   return (
@@ -94,9 +196,13 @@ const AdvancedFilters = () => {
         </Button>
       </div>
 
-      <Accordion type="multiple" defaultValue={["documentType", "date", "sort"]}>
+      <Accordion 
+        type="multiple" 
+        value={activeAccordions}
+        onValueChange={(value) => setActiveAccordions(value)}
+      >
         <AccordionItem value="documentType">
-          <AccordionTrigger className="py-2">
+          <AccordionTrigger className="py-2" onClick={() => handleAccordionChange("documentType")}>
             <div className="flex items-center gap-2">
               <BookOpen className="h-4 w-4" />
               <span>Type de document</span>
@@ -133,7 +239,7 @@ const AdvancedFilters = () => {
         </AccordionItem>
 
         <AccordionItem value="date">
-          <AccordionTrigger className="py-2">
+          <AccordionTrigger className="py-2" onClick={() => handleAccordionChange("date")}>
             <div className="flex items-center gap-2">
               <CalendarIcon className="h-4 w-4" />
               <span>Période</span>
@@ -203,7 +309,7 @@ const AdvancedFilters = () => {
         </AccordionItem>
 
         <AccordionItem value="jurisdiction">
-          <AccordionTrigger className="py-2">
+          <AccordionTrigger className="py-2" onClick={() => handleAccordionChange("jurisdiction")}>
             <div className="flex items-center gap-2">
               <GitBranch className="h-4 w-4" />
               <span>Juridiction & Tribunaux</span>
@@ -242,7 +348,7 @@ const AdvancedFilters = () => {
         </AccordionItem>
 
         <AccordionItem value="author">
-          <AccordionTrigger className="py-2">
+          <AccordionTrigger className="py-2" onClick={() => handleAccordionChange("author")}>
             <div className="flex items-center gap-2">
               <User className="h-4 w-4" />
               <span>Auteur & Source</span>
@@ -301,7 +407,7 @@ const AdvancedFilters = () => {
         </AccordionItem>
 
         <AccordionItem value="location">
-          <AccordionTrigger className="py-2">
+          <AccordionTrigger className="py-2" onClick={() => handleAccordionChange("location")}>
             <div className="flex items-center gap-2">
               <Globe className="h-4 w-4" />
               <span>Pays & Langue</span>
@@ -343,7 +449,7 @@ const AdvancedFilters = () => {
         </AccordionItem>
 
         <AccordionItem value="relevance">
-          <AccordionTrigger className="py-2">
+          <AccordionTrigger className="py-2" onClick={() => handleAccordionChange("relevance")}>
             <div className="flex items-center gap-2">
               <Award className="h-4 w-4" />
               <span>Pertinence & Citations</span>
@@ -383,7 +489,7 @@ const AdvancedFilters = () => {
         </AccordionItem>
 
         <AccordionItem value="sort">
-          <AccordionTrigger className="py-2">
+          <AccordionTrigger className="py-2" onClick={() => handleAccordionChange("sort")}>
             <div className="flex items-center gap-2">
               <BookMarked className="h-4 w-4" />
               <span>Tri & Affichage</span>
@@ -443,7 +549,9 @@ const AdvancedFilters = () => {
         </AccordionItem>
       </Accordion>
 
-      <Button className="w-full mt-4">Appliquer les filtres</Button>
+      <Button className="w-full mt-4" onClick={applyFilters}>
+        Appliquer les filtres
+      </Button>
     </div>
   );
 };
