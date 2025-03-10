@@ -1,5 +1,4 @@
-
-import { CredentialsStore, saveCredentials } from '../models/Database';
+import { CredentialsStore, saveCredentials, getStoredCredentials } from '../models/Database';
 import puppeteer, { Browser } from 'puppeteer';
 
 /**
@@ -13,20 +12,13 @@ class AuthController {
    * @returns {boolean} True si l'utilisateur est connecté
    */
   isAuthenticated(): boolean {
-    const credentialsString = localStorage.getItem('databaseCredentials');
-    if (!credentialsString) return false;
+    const credentials = getStoredCredentials();
+    if (!credentials) return false;
     
-    try {
-      const credentials = JSON.parse(credentialsString);
-      
-      // Vérifie si au moins une base de données a des identifiants
-      return Object.values(credentials).some((db: any) => 
-        db.username && db.password
-      );
-    } catch (error) {
-      console.error("Erreur lors de la vérification de l'authentification:", error);
-      return false;
-    }
+    // Vérifie si au moins une base de données a des identifiants
+    return Object.values(credentials).some((db: any) => 
+      db.username && db.password
+    );
   }
 
   /**
@@ -35,16 +27,10 @@ class AuthController {
    * @returns {boolean} True si l'utilisateur est connecté à cette base de données
    */
   isAuthenticatedFor(dbKey: keyof CredentialsStore): boolean {
-    const credentialsString = localStorage.getItem('databaseCredentials');
-    if (!credentialsString) return false;
+    const credentials = getStoredCredentials();
+    if (!credentials) return false;
     
-    try {
-      const credentials = JSON.parse(credentialsString);
-      return credentials[dbKey] && credentials[dbKey].username && credentials[dbKey].password;
-    } catch (error) {
-      console.error(`Erreur lors de la vérification de l'authentification pour ${dbKey}:`, error);
-      return false;
-    }
+    return credentials[dbKey] && credentials[dbKey].username && credentials[dbKey].password;
   }
 
   /**
@@ -228,10 +214,8 @@ class AuthController {
    */
   logoutFrom(dbKey: keyof CredentialsStore): boolean {
     try {
-      const credentialsString = localStorage.getItem('databaseCredentials');
-      if (!credentialsString) return false;
-      
-      const credentials = JSON.parse(credentialsString);
+      const credentials = getStoredCredentials();
+      if (!credentials) return false;
       
       if (credentials[dbKey]) {
         credentials[dbKey] = { username: "", password: "", url: credentials[dbKey].url };
@@ -247,7 +231,7 @@ class AuthController {
           localStorage.removeItem('databaseCredentials');
         } else {
           // Sinon, sauvegarde les identifiants mis à jour
-          localStorage.setItem('databaseCredentials', JSON.stringify(credentials));
+          saveCredentials(credentials);
         }
         
         return true;

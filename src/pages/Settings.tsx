@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
@@ -21,7 +20,7 @@ import {
   CheckCircle, LogOut, Shield
 } from 'lucide-react';
 import { CredentialsStore, DATABASE_NAMES } from '@/models/Database';
-import { authController } from '@/controllers/authController';
+import { useAuth } from '@/hooks/useAuth';
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -37,6 +36,7 @@ import {
 const Settings = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isAuthenticated, logout, logoutFrom, updateSessionTime } = useAuth();
   const [credentials, setCredentials] = useState<CredentialsStore>({
     database1: { username: "", password: "", url: "" },
     database2: { username: "", password: "", url: "" },
@@ -55,18 +55,14 @@ const Settings = () => {
 
   useEffect(() => {
     // Vérifie si l'utilisateur est authentifié
-    if (!authController.isAuthenticated()) {
+    if (!isAuthenticated) {
       navigate('/');
       return;
     }
     
-    const savedCredentials = localStorage.getItem('databaseCredentials');
-    if (savedCredentials) {
-      setCredentials(JSON.parse(savedCredentials));
-    } else {
-      navigate('/');
-    }
-  }, [navigate]);
+    // Charger les identifiants depuis le localStorage déchiffré
+    // Cette fonctionnalité est gérée par le hook useAuth
+  }, [isAuthenticated, navigate]);
 
   const handleCredentialChange = (
     db: keyof CredentialsStore,
@@ -109,7 +105,7 @@ const Settings = () => {
   };
 
   const clearCredentials = () => {
-    authController.logout();
+    logout();
     
     toast({
       title: "Déconnexion réussie",
@@ -120,21 +116,10 @@ const Settings = () => {
     navigate('/');
   };
 
-  const logoutFromDatabase = (db: keyof CredentialsStore) => {
-    const success = authController.logoutFrom(db);
+  const handleLogoutFromDatabase = (db: keyof CredentialsStore) => {
+    const success = logoutFrom(db);
     
     if (success) {
-      // Mettre à jour l'état local
-      const savedCredentials = localStorage.getItem('databaseCredentials');
-      
-      if (savedCredentials) {
-        setCredentials(JSON.parse(savedCredentials));
-      } else {
-        // Si aucune base de données n'est connectée, rediriger vers la page de connexion
-        navigate('/');
-        return;
-      }
-      
       toast({
         title: "Déconnexion réussie",
         description: `Vous avez été déconnecté de ${DATABASE_NAMES[db]}`,
@@ -152,6 +137,22 @@ const Settings = () => {
 
   const isConnectedToDatabase = (db: keyof CredentialsStore): boolean => {
     return credentials[db].username !== "" && credentials[db].password !== "";
+  };
+
+  const handleSessionTimeoutChange = (value: string) => {
+    setSettings({
+      ...settings,
+      sessionTimeout: value
+    });
+    
+    // Mise à jour du délai d'expiration via le hook d'authentification
+    updateSessionTime(parseInt(value, 10));
+    
+    toast({
+      title: "Délai d'expiration mis à jour",
+      description: `Votre session expirera après ${value} minutes d'inactivité`,
+      duration: 3000,
+    });
   };
 
   return (
@@ -206,7 +207,7 @@ const Settings = () => {
                                 variant="outline" 
                                 size="sm"
                                 className="ml-2 text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600"
-                                onClick={() => logoutFromDatabase(db)}
+                                onClick={() => handleLogoutFromDatabase(db)}
                               >
                                 <LogOut className="h-3.5 w-3.5 mr-1" />
                                 Déconnecter
@@ -409,7 +410,7 @@ const Settings = () => {
                       <select
                         id="session-timeout"
                         value={settings.sessionTimeout}
-                        onChange={(e) => handleSettingChange('sessionTimeout', e.target.value)}
+                        onChange={(e) => handleSessionTimeoutChange(e.target.value)}
                         className="w-full rounded-md border border-input bg-background px-3 py-2"
                         disabled={!settings.enableSecureMode}
                       >

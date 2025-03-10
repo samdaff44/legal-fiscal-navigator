@@ -2,6 +2,8 @@
 /**
  * Modèle représentant une base de données avec ses informations de connexion
  */
+import { encrypt, decrypt } from '../utils/encryption';
+
 export interface DatabaseCredentials {
   username: string;
   password: string;
@@ -31,11 +33,12 @@ export const DATABASE_URLS: Record<keyof CredentialsStore, string> = {
  * @returns {CredentialsStore | null} Les identifiants stockés ou null
  */
 export const getStoredCredentials = (): CredentialsStore | null => {
-  const credentialsString = localStorage.getItem('databaseCredentials');
-  if (!credentialsString) return null;
+  const encryptedCredentials = localStorage.getItem('databaseCredentials');
+  if (!encryptedCredentials) return null;
   
   try {
-    return JSON.parse(credentialsString);
+    const decryptedCredentials = decrypt(encryptedCredentials);
+    return JSON.parse(decryptedCredentials);
   } catch (error) {
     console.error("Erreur lors de la lecture des identifiants:", error);
     return null;
@@ -66,12 +69,14 @@ export const getAccessibleDatabases = (): string[] => {
 };
 
 /**
- * Sauvegarde les identifiants dans le localStorage
+ * Sauvegarde les identifiants dans le localStorage de manière chiffrée
  * @param {CredentialsStore} credentials - Les identifiants à stocker
  */
 export const saveCredentials = (credentials: CredentialsStore): void => {
   try {
-    localStorage.setItem('databaseCredentials', JSON.stringify(credentials));
+    // Chiffrement des identifiants avant stockage
+    const encryptedCredentials = encrypt(JSON.stringify(credentials));
+    localStorage.setItem('databaseCredentials', encryptedCredentials);
   } catch (error) {
     console.error("Erreur lors de la sauvegarde des identifiants:", error);
     throw new Error("Impossible de sauvegarder les identifiants");

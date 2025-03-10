@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/card";
 import { Database, Lock, Shield, ExternalLink, InfoIcon } from 'lucide-react';
 import { CredentialsStore, DATABASE_NAMES, DATABASE_URLS } from '@/models/Database';
-import { authController } from '@/controllers/authController';
+import { useAuth } from '@/hooks/useAuth';
 
 /**
  * Composant de formulaire d'identifiants pour les bases de données
@@ -23,6 +23,7 @@ import { authController } from '@/controllers/authController';
 const CredentialsForm = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [activeDatabase, setActiveDatabase] = useState<keyof CredentialsStore>("database1");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [credentials, setCredentials] = useState<CredentialsStore>({
@@ -56,8 +57,8 @@ const CredentialsForm = () => {
     setIsSubmitting(true);
     
     try {
-      // Tentative de connexion via le contrôleur d'authentification
-      const connectedDatabases = await authController.login(credentials);
+      // Tentative de connexion via le hook d'authentification
+      const connectedDatabases = await login(credentials);
       
       toast({
         title: "Identifiants enregistrés",
@@ -111,8 +112,8 @@ const CredentialsForm = () => {
         <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3 mb-6 flex items-start">
           <InfoIcon className="text-amber-600 dark:text-amber-400 h-5 w-5 mr-3 mt-0.5 flex-shrink-0" />
           <p className="text-sm text-amber-800 dark:text-amber-300">
-            Vos identifiants seront utilisés pour accéder aux sites web via un navigateur automatisé. 
-            Les recherches s'effectueront uniquement sur les bases de données pour lesquelles vous avez fourni des identifiants valides.
+            Vos identifiants seront chiffrés et stockés localement sur votre appareil. 
+            Une session active expirera automatiquement après 30 minutes d'inactivité.
           </p>
         </div>
       
