@@ -8,10 +8,11 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import AdvancedFilters from './AdvancedFilters';
 import { searchController } from '@/controllers/search';
 import { authController } from '@/controllers/authController';
-import { SearchHistory } from '@/models/SearchResult';
 import SearchInput from './search/SearchInput';
 import SearchHistoryComponent from './search/SearchHistory';
-import DatabaseButtons, { DATABASE_NAMES } from './search/DatabaseButtons';
+import DatabaseButtons from './search/DatabaseButtons';
+import { useDatabaseSelection } from '@/hooks/useDatabaseSelection';
+import { useSearchHistory } from '@/hooks/useSearchHistory';
 
 /**
  * Composant de barre de recherche
@@ -21,16 +22,22 @@ const SearchBar = () => {
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
-  const [searchHistory, setSearchHistory] = useState<SearchHistory[]>([]);
-  const [showSearchHistory, setShowSearchHistory] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const [selectedDatabases, setSelectedDatabases] = useState<string[]>(["Toutes les bases"]);
-
-  useEffect(() => {
-    // Récupération de l'historique des recherches
-    setSearchHistory(searchController.getSearchHistory());
-  }, []);
+  
+  const { 
+    selectedDatabases, 
+    toggleDatabase,
+    getSelectedDatabasesForSearch
+  } = useDatabaseSelection();
+  
+  const {
+    searchHistory,
+    showSearchHistory,
+    selectHistoryItem,
+    clearSearchHistory,
+    toggleSearchHistory
+  } = useSearchHistory();
 
   useEffect(() => {
     // Gestion des clics en dehors de la barre de recherche
@@ -39,7 +46,7 @@ const SearchBar = () => {
         searchInputRef.current && 
         !searchInputRef.current.contains(event.target as Node)
       ) {
-        setShowSearchHistory(false);
+        toggleSearchHistory(false);
       }
     };
 
@@ -47,7 +54,7 @@ const SearchBar = () => {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, []);
+  }, [toggleSearchHistory]);
 
   /**
    * Gère la soumission du formulaire de recherche
@@ -81,19 +88,13 @@ const SearchBar = () => {
 
     // Mise à jour de l'historique des recherches
     const trimmedQuery = query.trim();
-    const currentHistory = searchController.getSearchHistory();
-    const newHistory = [
-      { query: trimmedQuery, timestamp: Date.now() },
-      ...currentHistory.filter(item => item.query !== trimmedQuery).slice(0, 4)
-    ];
-    
-    setSearchHistory(newHistory);
-    localStorage.setItem('searchHistory', JSON.stringify(newHistory));
+    searchController.addToSearchHistory(trimmedQuery, 0);
 
     // Toast de notification
+    const selectedDBs = getSelectedDatabasesForSearch();
     const dbMessage = selectedDatabases.includes("Toutes les bases") 
       ? "Recherche sur les trois bases de données..."
-      : `Recherche sur ${selectedDatabases.join(", ")}...`;
+      : `Recherche sur ${selectedDBs.join(", ")}...`;
     
     toast({
       title: "Recherche en cours",
@@ -107,23 +108,10 @@ const SearchBar = () => {
       navigate('/results', { 
         state: { 
           query,
-          databases: selectedDatabases.includes("Toutes les bases") 
-            ? ["Lexis Nexis", "Dalloz", "EFL Francis Lefebvre"]
-            : selectedDatabases
+          databases: selectedDBs
         } 
       });
     }, 1000);
-  };
-
-  /**
-   * Sélectionne un élément de l'historique
-   */
-  const selectHistoryItem = (item: string) => {
-    setQuery(item);
-    setShowSearchHistory(false);
-    if (searchInputRef.current) {
-      searchInputRef.current.focus();
-    }
   };
 
   /**
@@ -136,37 +124,6 @@ const SearchBar = () => {
     }
   };
 
-  /**
-   * Bascule la sélection d'une base de données
-   */
-  const toggleDatabase = (dbName: string) => {
-    if (dbName === "Toutes les bases") {
-      setSelectedDatabases(["Toutes les bases"]);
-      return;
-    }
-    
-    const newSelection = selectedDatabases.filter(db => db !== "Toutes les bases");
-    
-    if (newSelection.includes(dbName)) {
-      if (newSelection.length === 1) {
-        setSelectedDatabases(["Toutes les bases"]);
-      } else {
-        setSelectedDatabases(newSelection.filter(db => db !== dbName));
-      }
-    } else {
-      setSelectedDatabases([...newSelection, dbName]);
-    }
-  };
-
-  /**
-   * Efface l'historique des recherches
-   */
-  const clearSearchHistory = () => {
-    searchController.clearSearchHistory();
-    setSearchHistory([]);
-    setShowSearchHistory(false);
-  };
-
   return (
     <div className="relative w-full max-w-3xl mx-auto">
       <form onSubmit={handleSearch} className="relative">
@@ -175,7 +132,7 @@ const SearchBar = () => {
             query={query}
             setQuery={setQuery}
             isSearching={isSearching}
-            onFocus={() => setShowSearchHistory(true)}
+            onFocus={() => toggleSearchHistory(true)}
             clearQuery={clearQuery}
             searchInputRef={searchInputRef}
           />
@@ -210,7 +167,7 @@ const SearchBar = () => {
 
       <SearchHistoryComponent
         searchHistory={searchHistory}
-        selectHistoryItem={selectHistoryItem}
+        selectHistoryItem={(item) => selectHistoryItem(item, () => setQuery(item))}
         clearSearchHistory={clearSearchHistory}
         show={showSearchHistory}
       />

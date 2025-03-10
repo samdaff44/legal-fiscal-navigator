@@ -1,29 +1,18 @@
-
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
 import SearchBar from '@/components/SearchBar';
 import ResultsDisplay from '@/components/ResultsDisplay';
+import ResultsActions from '@/components/results/ResultsActions';
+import ResultsHeader from '@/components/results/ResultsHeader';
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Filter, Download, ChevronDown } from 'lucide-react';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import AdvancedFilters, { SearchFilters } from '@/components/AdvancedFilters';
-import { authController } from '@/controllers/authController';
-import { useToast } from "@/components/ui/use-toast";
+import { ChevronDown } from 'lucide-react';
+import { useToast } from '@/components/ui/use-toast';
+import { SearchFilters } from '@/types/search';
 
 interface LocationState {
   query?: string;
+  databases?: string[];
 }
 
 /**
@@ -38,14 +27,9 @@ const Results = () => {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [activeFilters, setActiveFilters] = useState<SearchFilters | null>(null);
   const [isFilterActive, setIsFilterActive] = useState(false);
+  const [searchDatabases, setSearchDatabases] = useState<string[]>([]);
   
   useEffect(() => {
-    // Vérifie si l'utilisateur est authentifié
-    if (!authController.isAuthenticated()) {
-      navigate('/');
-      return;
-    }
-    
     // Récupère la requête depuis l'état de navigation
     const state = location.state as LocationState;
     
@@ -55,12 +39,15 @@ const Results = () => {
     }
     
     setQuery(state.query);
+    if (state.databases) {
+      setSearchDatabases(state.databases);
+    }
   }, [location, navigate]);
 
   const handleApplyFilters = (filters: SearchFilters) => {
     setActiveFilters(filters);
     setIsFilterActive(true);
-    setSortOrder(filters.sortOption);
+    setSortOrder(filters.sortOption || 'relevance');
     setFiltersOpen(false);
     
     toast({
@@ -68,6 +55,35 @@ const Results = () => {
       description: "Les résultats ont été filtrés selon vos critères",
       duration: 3000,
     });
+  };
+
+  const handleSortChange = (value: string) => {
+    setSortOrder(value);
+    
+    // Si des filtres sont actifs, mettre à jour l'option de tri
+    if (activeFilters) {
+      setActiveFilters({
+        ...activeFilters,
+        sortOption: value
+      });
+    }
+    
+    toast({
+      title: "Tri modifié",
+      description: `Les résultats sont maintenant triés par ${getTriLabel(value)}`,
+      duration: 2000,
+    });
+  };
+
+  const getTriLabel = (value: string): string => {
+    switch (value) {
+      case 'relevance': return 'pertinence';
+      case 'date-desc': return 'date (récent)';
+      case 'date-asc': return 'date (ancien)';
+      case 'citations': return 'nombre de citations';
+      case 'source': return 'source';
+      default: return value;
+    }
   };
 
   const handleExportResults = () => {
@@ -104,35 +120,6 @@ const Results = () => {
     }, 1500);
   };
 
-  const handleSortChange = (value: string) => {
-    setSortOrder(value);
-    
-    // Si des filtres sont actifs, mettre à jour l'option de tri
-    if (activeFilters) {
-      setActiveFilters({
-        ...activeFilters,
-        sortOption: value
-      });
-    }
-    
-    toast({
-      title: "Tri modifié",
-      description: `Les résultats sont maintenant triés par ${getTriLabel(value)}`,
-      duration: 2000,
-    });
-  };
-
-  const getTriLabel = (value: string): string => {
-    switch (value) {
-      case 'relevance': return 'pertinence';
-      case 'date-desc': return 'date (récent)';
-      case 'date-asc': return 'date (ancien)';
-      case 'citations': return 'nombre de citations';
-      case 'source': return 'source';
-      default: return value;
-    }
-  };
-
   if (!query) {
     return <div className="flex items-center justify-center h-screen">Chargement...</div>;
   }
@@ -144,69 +131,33 @@ const Results = () => {
       <main className="flex-grow pt-20 px-4 md:px-8">
         <div className="container mx-auto py-6">
           <div className="mb-8 animate-fade-in">
-            <Button 
-              variant="ghost" 
-              className="mb-4"
-              onClick={() => navigate('/dashboard')}
-            >
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Retour
-            </Button>
+            <ResultsHeader 
+              query={query} 
+              navigateToDashboard={() => navigate('/dashboard')}
+            />
             
             <div className="mb-8">
               <SearchBar />
             </div>
             
             <div className="mt-8">
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-                <h1 className="text-2xl font-semibold">
-                  Résultats pour: <span className="text-primary font-normal">"{query}"</span>
-                </h1>
-                
-                <div className="flex flex-wrap gap-3">
-                  <Select value={sortOrder} onValueChange={handleSortChange}>
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="Trier par" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="relevance">Pertinence</SelectItem>
-                      <SelectItem value="date-desc">Date (récent)</SelectItem>
-                      <SelectItem value="date-asc">Date (ancien)</SelectItem>
-                      <SelectItem value="source">Source</SelectItem>
-                      <SelectItem value="citations">Citations</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  
-                  <Popover open={filtersOpen} onOpenChange={setFiltersOpen}>
-                    <PopoverTrigger asChild>
-                      <Button 
-                        variant={isFilterActive ? "default" : "outline"} 
-                        className={`flex items-center gap-2 ${isFilterActive ? "bg-primary text-primary-foreground" : ""}`}
-                      >
-                        <Filter className="h-4 w-4" />
-                        <span>Filtres {isFilterActive ? "(actifs)" : ""}</span>
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-80" align="end">
-                      <AdvancedFilters 
-                        onApplyFilters={handleApplyFilters}
-                        initialFilters={activeFilters || undefined}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  
-                  <Button 
-                    variant="outline" 
-                    className="flex items-center gap-2"
-                    onClick={handleExportResults}
-                  >
-                    <Download className="h-4 w-4" />
-                    <span>Exporter</span>
-                  </Button>
-                </div>
-              </div>
+              <ResultsActions 
+                query={query}
+                sortOrder={sortOrder}
+                handleSortChange={handleSortChange}
+                isFilterActive={isFilterActive}
+                filtersOpen={filtersOpen}
+                setFiltersOpen={setFiltersOpen}
+                activeFilters={activeFilters}
+                handleApplyFilters={handleApplyFilters}
+                handleExportResults={handleExportResults}
+              />
               
-              <ResultsDisplay query={query} filters={activeFilters || undefined} sortOrder={sortOrder} />
+              <ResultsDisplay 
+                query={query} 
+                filters={activeFilters || undefined} 
+                sortOrder={sortOrder} 
+              />
               
               <div className="mt-8 flex justify-center">
                 <Button 
