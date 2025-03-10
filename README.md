@@ -69,7 +69,7 @@ L'application utilise le localStorage pour :
 
 ## Sécurité
 
-Les identifiants sont stockés localement dans le navigateur. En production, il serait préférable d'implémenter :
+Les identifiants sont stockés localement dans le navigateur. Il a été implémenté :
 - Un chiffrement des données sensibles
 - Une authentification via un backend sécurisé
 - Des sessions avec expiration automatique
