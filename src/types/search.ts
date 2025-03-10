@@ -19,13 +19,21 @@ export interface ResultItem {
 }
 
 export interface SearchFilters {
-  sources?: string[];
-  dateFrom?: string;
-  dateTo?: string;
-  types?: string[];
-  sortOption?: string;
-  language?: string;
+  documentTypes?: string[];
+  dateRange?: { from?: Date; to?: Date };
+  jurisdiction?: string;
+  court?: string;
+  author?: string;
+  publicationYears?: number[];
+  categories?: string[];
+  languages?: string[];
   country?: string;
+  relevanceThreshold?: number;
+  citationsThreshold?: number;
+  sortOption?: string;
+  maxResults?: number;
+  sources?: string[];
+  types?: string[];
 }
 
 export interface ResultsDisplayProps {

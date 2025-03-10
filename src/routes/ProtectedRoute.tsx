@@ -12,7 +12,7 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { isAuthenticated } = useAuth();
   const { toast } = useToast();
   
-  if (!isAuthenticated()) {
+  if (!isAuthenticated) {
     toast({
       title: "Identifiants manquants",
       description: "Veuillez d'abord configurer vos identifiants",
