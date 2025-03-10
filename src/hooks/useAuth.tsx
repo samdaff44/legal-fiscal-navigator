@@ -1,4 +1,3 @@
-
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from "@/components/ui/use-toast";
@@ -12,6 +11,7 @@ interface AuthContextType {
   authenticatedDatabases: string[];
   login: (credentials: CredentialsStore) => Promise<string[]>;
   logout: () => void;
+  logoutFrom: (dbKey: keyof CredentialsStore) => boolean;
   updateSessionTime: (minutes: number) => void;
 }
 
@@ -118,6 +118,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     setAuthenticatedDatabases([]);
   };
 
+  // Déconnexion d'une base de données spécifique
+  const logoutFrom = (dbKey: keyof CredentialsStore): boolean => {
+    return authController.logoutFrom(dbKey);
+  };
+
   // Mise à jour du délai d'expiration de session
   const updateSessionTime = (minutes: number) => {
     updateSessionTimeout(minutes);
@@ -129,6 +134,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     authenticatedDatabases,
     login,
     logout,
+    logoutFrom,
     updateSessionTime
   };
 
