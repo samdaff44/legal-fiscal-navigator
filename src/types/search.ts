@@ -19,19 +19,19 @@ export interface ResultItem {
 }
 
 export interface SearchFilters {
-  documentTypes?: string[];
-  dateRange?: { from?: Date; to?: Date };
+  documentTypes: string[];
+  dateRange: { from?: Date; to?: Date };
   jurisdiction?: string;
   court?: string;
-  author?: string;
-  publicationYears?: number[];
-  categories?: string[];
-  languages?: string[];
+  author: string;
+  publicationYears: number[];
+  categories: string[];
+  languages: string[];
   country?: string;
-  relevanceThreshold?: number;
-  citationsThreshold?: number;
-  sortOption?: string;
-  maxResults?: number;
+  relevanceThreshold: number;
+  citationsThreshold: number;
+  sortOption: string;
+  maxResults: number;
   sources?: string[];
   types?: string[];
 }

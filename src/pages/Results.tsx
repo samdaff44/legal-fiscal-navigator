@@ -45,6 +45,22 @@ const Results = () => {
     }
   }, [location, navigate]);
 
+  // Create default filters with required properties
+  const createDefaultFilters = (): SearchFilters => {
+    return {
+      documentTypes: [],
+      dateRange: {},
+      author: "",
+      publicationYears: [2000, 2023],
+      categories: [],
+      languages: [],
+      relevanceThreshold: 70,
+      citationsThreshold: 0,
+      sortOption: 'relevance',
+      maxResults: 50
+    };
+  };
+
   const handleApplyFilters = (filters: SearchFilters) => {
     setActiveFilters(filters);
     setIsFilterActive(true);
@@ -149,7 +165,7 @@ const Results = () => {
                 isFilterActive={isFilterActive}
                 filtersOpen={filtersOpen}
                 setFiltersOpen={setFiltersOpen}
-                activeFilters={activeFilters}
+                activeFilters={activeFilters ? activeFilters : createDefaultFilters()}
                 handleApplyFilters={handleApplyFilters}
                 handleExportResults={handleExportResults}
               />

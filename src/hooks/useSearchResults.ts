@@ -6,6 +6,7 @@ import { searchController } from '@/controllers/search';
 import { getAccessibleDatabases } from '@/models/Database';
 import { SearchFilters } from '@/types/search';
 import { copyToClipboard } from '@/utils/resultActions';
+import { SearchFilter } from '@/models/SearchResult';
 
 interface UseSearchResultsProps {
   query: string;
@@ -47,9 +48,40 @@ export const useSearchResults = ({ query, filters, sortOrder }: UseSearchResults
           duration: 3000,
         });
         
+        // Convertir les filtres du format SearchFilters vers SearchFilter
+        const convertedFilters: SearchFilter = {};
+        
+        if (filters) {
+          // Map sources and types directly
+          if (filters.sources) convertedFilters.sources = filters.sources;
+          if (filters.types) convertedFilters.types = filters.types;
+          
+          // Convert dateRange format
+          if (filters.dateRange) {
+            convertedFilters.dateRange = {
+              start: filters.dateRange.from ? filters.dateRange.from.toISOString() : undefined,
+              end: filters.dateRange.to ? filters.dateRange.to.toISOString() : undefined
+            };
+          }
+          
+          // Map other properties directly
+          if (filters.jurisdiction) convertedFilters.jurisdiction = filters.jurisdiction;
+          if (filters.court) convertedFilters.court = filters.court;
+          if (filters.author) convertedFilters.author = filters.author;
+          if (filters.publicationYears && filters.publicationYears.length > 0) {
+            convertedFilters.publicationYear = filters.publicationYears[0]; // Using the first year for simplicity
+          }
+          if (filters.categories) convertedFilters.categories = filters.categories;
+          if (filters.languages) convertedFilters.languages = filters.languages;
+          if (filters.country) convertedFilters.country = filters.country;
+          if (filters.relevanceThreshold) convertedFilters.relevanceThreshold = filters.relevanceThreshold;
+          if (filters.citationsThreshold) convertedFilters.minCitations = filters.citationsThreshold;
+          if (filters.maxResults) convertedFilters.maxResults = filters.maxResults;
+        }
+        
         const searchResults = await searchController.searchAllDatabases({ 
           query,
-          filters: filters || {},
+          filters: convertedFilters,
           sortOrder
         });
         setResults(searchResults);
