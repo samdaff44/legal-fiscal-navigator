@@ -1,9 +1,9 @@
 
-# LegalFiscal Navigator
+# Torbey Tax Navigator
 
 ## Description
 
-LegalFiscal Navigator est une application de recherche juridique et fiscale permettant aux utilisateurs de consulter des bases de données spécialisées comme Lexis Nexis, Dalloz, et EFL Francis Lefebvre à partir d'une interface unique et simplifiée.
+Torbey Tax Navigator est une application de recherche juridique et fiscale permettant aux utilisateurs de consulter des bases de données spécialisées comme Lexis Nexis, Dalloz, et EFL Francis Lefebvre à partir d'une interface unique et simplifiée.
 
 ## Architecture
 

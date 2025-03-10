@@ -1,9 +1,9 @@
 
-# Documentation de l'API LegalFiscal Navigator
+# Documentation de l'API Torbey Tax Navigator
 
 ## Introduction
 
-Cette documentation décrit l'architecture et les interfaces de programmation de l'application LegalFiscal Navigator.
+Cette documentation décrit l'architecture et les interfaces de programmation de l'application Torbey Tax Navigator.
 
 ## Architecture MVC
 

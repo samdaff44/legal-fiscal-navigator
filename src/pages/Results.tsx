@@ -194,7 +194,7 @@ const Results = () => {
       <footer className="border-t py-6 bg-secondary/50 mt-12">
         <div className="container flex flex-col items-center justify-between gap-4 md:flex-row">
           <p className="text-center text-sm text-muted-foreground">
-            © 2023 LegalFiscal Navigator. Tous droits réservés.
+            © 2023 Torbey Tax Navigator. Tous droits réservés.
           </p>
           <p className="text-center text-sm text-muted-foreground">
             Résultats compilés de vos bases de données juridiques

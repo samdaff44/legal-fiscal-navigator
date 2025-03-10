@@ -51,7 +51,7 @@ const Index = () => {
           </div>
           
           <h1 className="squarespace-heading text-4xl md:text-6xl font-light tracking-tight mb-6">
-            LegalFiscal Navigator
+            Torbey Tax Navigator
           </h1>
           
           <p className="text-xl text-muted-foreground mb-16 max-w-2xl mx-auto font-light leading-relaxed">
@@ -103,7 +103,7 @@ const Index = () => {
       <footer className="py-10 bg-secondary/30">
         <div className="container flex flex-col items-center justify-between gap-4 md:flex-row">
           <p className="text-center text-sm text-muted-foreground md:text-left">
-            © 2023 LegalFiscal Navigator. Tous droits réservés.
+            © 2023 Torbey Tax Navigator. Tous droits réservés.
           </p>
           <p className="text-center text-sm text-muted-foreground md:text-right">
             Une application conçue pour les professionnels du droit et de la fiscalité.

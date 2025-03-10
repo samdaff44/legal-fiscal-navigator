@@ -111,7 +111,7 @@ const Dashboard = () => {
       <footer className="border-t border-border/20 py-8 bg-secondary/30">
         <div className="container max-w-6xl mx-auto flex flex-col items-center justify-between gap-4 md:flex-row px-4">
           <p className="text-center text-sm text-muted-foreground font-light">
-            © 2023 LegalFiscal Navigator. Tous droits réservés.
+            © 2023 Torbey Tax Navigator. Tous droits réservés.
           </p>
           <p className="text-center text-sm text-muted-foreground font-light">
             Connecté à toutes vos bases de données

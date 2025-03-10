@@ -61,7 +61,7 @@ const Header = () => {
               <Database className="w-4 h-4 text-primary group-hover:scale-110 transition-transform duration-300" />
             </div>
           </div>
-          <span className="font-light tracking-wide text-lg">LegalFiscal <span className="font-medium">Navigator</span></span>
+          <span className="font-light tracking-wide text-lg">Torbey <span className="font-medium">Tax Navigator</span></span>
         </Link>
         
         <nav className="hidden md:flex items-center gap-8">
