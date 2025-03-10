@@ -30,7 +30,7 @@ class AuthController {
     const credentials = getStoredCredentials();
     if (!credentials) return false;
     
-    return credentials[dbKey] && credentials[dbKey].username && credentials[dbKey].password;
+    return !!(credentials[dbKey] && credentials[dbKey].username && credentials[dbKey].password);
   }
 
   /**
