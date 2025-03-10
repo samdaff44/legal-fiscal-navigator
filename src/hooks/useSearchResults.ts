@@ -1,10 +1,11 @@
 
 import { useState, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
-import { SearchResult, SearchOptions } from '@/models/SearchResult';
+import { SearchResult } from '@/models/SearchResult';
 import { searchController } from '@/controllers/search';
 import { getAccessibleDatabases } from '@/models/Database';
 import { SearchFilters } from '@/types/search';
+import { copyToClipboard } from '@/utils/resultActions';
 
 interface UseSearchResultsProps {
   query: string;
@@ -91,13 +92,23 @@ export const useSearchResults = ({ query, filters, sortOrder }: UseSearchResults
    * Copie le texte dans le presse-papier
    * @param {string} text - Texte à copier
    */
-  const handleCopy = (text: string) => {
-    navigator.clipboard.writeText(text);
-    toast({
-      title: "Copié",
-      description: "Le texte a été copié dans le presse-papier",
-      duration: 3000,
-    });
+  const handleCopy = async (text: string) => {
+    const success = await copyToClipboard(text);
+    
+    if (success) {
+      toast({
+        title: "Copié",
+        description: "Le texte a été copié dans le presse-papier",
+        duration: 3000,
+      });
+    } else {
+      toast({
+        title: "Erreur",
+        description: "Impossible de copier le texte dans le presse-papier",
+        variant: "destructive",
+        duration: 3000,
+      });
+    }
   };
 
   return {
