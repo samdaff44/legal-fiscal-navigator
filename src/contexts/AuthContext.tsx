@@ -1,20 +1,10 @@
-
 import { createContext, useState, useEffect, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from "@/components/ui/use-toast";
 import { CredentialsStore, getStoredCredentials } from '@/models/Database';
 import { authController } from '@/controllers/auth/authController';
 import { startSession, isSessionActive, endSession, updateSessionTimeout } from '@/utils/sessionManager';
-
-// Interface pour le contexte d'authentification
-export interface AuthContextType {
-  isAuthenticated: boolean;
-  authenticatedDatabases: string[];
-  login: (credentials: CredentialsStore) => Promise<string[]>;
-  logout: () => void;
-  logoutFrom: (dbKey: keyof CredentialsStore) => boolean;
-  updateSessionTime: (minutes: number) => void;
-}
+import { AuthContextType } from './AuthContextType';
 
 // Création du contexte
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);

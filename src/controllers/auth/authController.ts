@@ -16,7 +16,7 @@ class AuthController {
     if (!credentials) return false;
     
     // Vérifie si au moins une base de données a des identifiants
-    return Object.values(credentials).some((db: any) => 
+    return Object.values(credentials).some((db: Record<string, string>) => 
       db.username && db.password
     );
   }

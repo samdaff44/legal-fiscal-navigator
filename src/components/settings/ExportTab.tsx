@@ -9,7 +9,10 @@ import {
 } from "@/components/ui/card";
 import { Download } from 'lucide-react';
 
-const Upload = (props: any) => (
+// Define proper types for the SVG props instead of 'any'
+type UploadIconProps = React.SVGProps<SVGSVGElement>;
+
+const Upload = (props: UploadIconProps) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     width="24"

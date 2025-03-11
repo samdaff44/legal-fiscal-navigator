@@ -79,9 +79,12 @@ jobs:
     
     - name: Build production bundle
       env:
+        NODE_ENV: "production"
         NODE_OPTIONS: "--max-old-space-size=4096"
       run: |
-        # Mark puppeteer as external during build
+        # Create empty mock file for puppeteer to prevent build errors
+        mkdir -p src/mocks
+        echo "export const mockPuppeteer = {};" > src/mocks/puppeteer-mock.js
         npm run build
     
     - name: Upload build artifacts

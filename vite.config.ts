@@ -20,6 +20,11 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  define: {
+    // Define global constants for the client
+    'process.env.NODE_ENV': JSON.stringify(mode),
+    'global': 'window'
+  },
   // Optimizations for build
   build: {
     rollupOptions: {
@@ -32,12 +37,14 @@ export default defineConfig(({ mode }) => ({
         'https',
         'stream',
         'url',
-        'zlib'
+        'zlib',
+        'crypto',
       ],
     },
   },
   // Properly handling Node.js built-ins
   optimizeDeps: {
+    exclude: ['puppeteer'],
     esbuildOptions: {
       define: {
         global: 'globalThis',
@@ -47,7 +54,7 @@ export default defineConfig(({ mode }) => ({
           name: 'node-globals-polyfill',
           setup(build) {
             // Use browser-compatible versions if available
-            build.onResolve({ filter: /^(stream|http|https|zlib|url)$/ }, () => {
+            build.onResolve({ filter: /^(stream|http|https|zlib|url|crypto|fs|path)$/ }, () => {
               return { external: true };
             });
           },
