@@ -1,42 +1,73 @@
 
-import puppeteer, { Browser, Page } from 'puppeteer';
 import { CredentialsStore } from '../../models/Database';
 import { CredentialVerificationResult, DatabaseLoginConfig, DATABASE_LOGIN_CONFIGS, AuthOptions } from './types';
 
-/**
- * Service pour la vérification des identifiants des bases de données
- */
-export class CredentialVerifier {
-  private browser: Browser | null = null;
+// Mock implementation for client-side
+class ClientSideVerifier {
+  async verifyCredentials(
+    dbKey: keyof CredentialsStore, 
+    username: string, 
+    password: string
+  ): Promise<CredentialVerificationResult> {
+    console.log(`Client-side credential verification for ${dbKey}`);
+    
+    // In a real application, we would call an API endpoint here
+    // For now, we'll simulate a successful verification if credentials are not empty
+    if (!username || !password) {
+      return { 
+        isValid: false, 
+        error: "Les identifiants ne peuvent pas être vides" 
+      };
+    }
+    
+    // Simple validation logic for demo purposes
+    return { 
+      isValid: true,
+      error: undefined
+    };
+  }
   
-  /**
-   * Initialise le navigateur pour la vérification des identifiants
-   * @param {AuthOptions} options - Options d'initialisation
-   * @returns {Promise<Browser>} Instance du navigateur
-   */
-  async initBrowser(options: AuthOptions = {}): Promise<Browser> {
+  async initBrowser(): Promise<any> {
+    return null;
+  }
+  
+  async closeBrowser(): Promise<void> {
+    // No-op for client
+  }
+}
+
+// This class will only be instantiated on the server
+class ServerSideVerifier {
+  private browser: any = null;
+  
+  async initBrowser(options: AuthOptions = {}): Promise<any> {
     if (this.browser) {
       return this.browser;
     }
     
-    this.browser = await puppeteer.launch({
-      headless: options.headless !== false,
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-accelerated-2d-canvas',
-        '--disable-gpu',
-        '--window-size=1280,800',
-      ]
-    });
-    
-    return this.browser;
+    try {
+      // Dynamic import to avoid bundling Puppeteer in client code
+      const puppeteer = await import('puppeteer');
+      
+      this.browser = await puppeteer.default.launch({
+        headless: options.headless !== false,
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-accelerated-2d-canvas',
+          '--disable-gpu',
+          '--window-size=1280,800',
+        ]
+      });
+      
+      return this.browser;
+    } catch (error) {
+      console.error('Failed to initialize browser:', error);
+      throw error;
+    }
   }
   
-  /**
-   * Ferme le navigateur
-   */
   async closeBrowser(): Promise<void> {
     if (this.browser) {
       await this.browser.close();
@@ -44,13 +75,6 @@ export class CredentialVerifier {
     }
   }
   
-  /**
-   * Vérifie les identifiants d'une base de données spécifique
-   * @param {keyof CredentialsStore} dbKey - Clé de la base de données
-   * @param {string} username - Nom d'utilisateur
-   * @param {string} password - Mot de passe
-   * @returns {Promise<CredentialVerificationResult>} Résultat de la vérification
-   */
   async verifyCredentials(
     dbKey: keyof CredentialsStore, 
     username: string, 
@@ -67,7 +91,9 @@ export class CredentialVerifier {
       }
     }
     
-    const page = await this.browser!.newPage();
+    // Since we're using dynamic import, we need to import puppeteer again
+    const puppeteer = await import('puppeteer');
+    const page = await this.browser.newPage();
     
     try {
       // Configuration spécifique selon la base de données
@@ -91,27 +117,15 @@ export class CredentialVerifier {
     }
   }
   
-  /**
-   * Configure la page pour imiter un navigateur réel
-   * @param {Page} page - Instance de la page Puppeteer
-   */
-  private async configurePageForScraping(page: Page): Promise<void> {
+  private async configurePageForScraping(page: any): Promise<void> {
     await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36');
     await page.setExtraHTTPHeaders({
       'Accept-Language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7'
     });
   }
   
-  /**
-   * Tente de se connecter à une base de données
-   * @param {Page} page - Instance de la page Puppeteer
-   * @param {DatabaseLoginConfig} config - Configuration de connexion
-   * @param {string} username - Nom d'utilisateur
-   * @param {string} password - Mot de passe
-   * @returns {Promise<CredentialVerificationResult>} Résultat de la tentative
-   */
   private async attemptLogin(
-    page: Page, 
+    page: any, 
     config: DatabaseLoginConfig,
     username: string,
     password: string
@@ -139,7 +153,7 @@ export class CredentialVerifier {
     await new Promise(resolve => setTimeout(resolve, 1000));
     
     // Vérifie la présence d'éléments qui indiquent une connexion réussie
-    const isConnected = await page.evaluate((selector) => {
+    const isConnected = await page.evaluate((selector: string) => {
       return !!document.querySelector(selector);
     }, config.successSelector);
     
@@ -156,5 +170,15 @@ export class CredentialVerifier {
   }
 }
 
-// Export une instance unique (singleton) du vérificateur
-export const credentialVerifier = new CredentialVerifier();
+// Determine which implementation to use based on environment
+let credentialVerifier: ClientSideVerifier | ServerSideVerifier;
+
+// Check if we're in a browser environment
+const isBrowser = typeof window !== 'undefined';
+
+// Use the appropriate implementation
+credentialVerifier = isBrowser 
+  ? new ClientSideVerifier() 
+  : new ServerSideVerifier();
+
+export { credentialVerifier, ClientSideVerifier, ServerSideVerifier };

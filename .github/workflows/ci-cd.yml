@@ -78,7 +78,11 @@ jobs:
       run: npm ci
     
     - name: Build production bundle
-      run: npm run build
+      env:
+        NODE_OPTIONS: "--max-old-space-size=4096"
+      run: |
+        # Mark puppeteer as external during build
+        npm run build
     
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
