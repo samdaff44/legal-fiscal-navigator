@@ -1,3 +1,4 @@
+
 import { CredentialsStore } from '../../models/Database';
 import { CredentialVerificationResult, DatabaseLoginConfig, DATABASE_LOGIN_CONFIGS, AuthOptions } from './types';
 

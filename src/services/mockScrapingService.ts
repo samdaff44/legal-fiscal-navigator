@@ -33,6 +33,6 @@ export async function searchAllSites(query: string): Promise<SearchResult[]> {
 
 // Export the same rate limiter interface as the real service
 export const scrapingRateLimiter = {
-  isActionAllowed: (key: string) => true,
-  getTimeToWait: (key: string) => 0
+  isActionAllowed: (key: string): boolean => true,
+  getTimeToWait: (key: string): number => 0
 };
