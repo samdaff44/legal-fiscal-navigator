@@ -1,5 +1,6 @@
 
-import puppeteer, { Browser, Page } from 'puppeteer';
+// Import types but not implementations to avoid bundling issues
+import type { Browser, Page } from 'puppeteer';
 import { SearchResult } from '@/models/SearchResult';
 import { getAccessibleDatabases, getStoredCredentials } from '@/models/Database';
 
@@ -328,6 +329,9 @@ const siteConfigs: Record<string, SiteConfig> = {
  * @returns {Promise<Browser>} Instance de navigateur
  */
 async function launchBrowser(): Promise<Browser> {
+  // Use require instead of import to avoid bundling issues
+  const puppeteer = require('puppeteer');
+  
   return puppeteer.launch({
     headless: true, // Utilise le mode headless standard
     args: [

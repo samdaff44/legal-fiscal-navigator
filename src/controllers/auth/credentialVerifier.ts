@@ -1,4 +1,3 @@
-
 import { CredentialsStore } from '../../models/Database';
 import { CredentialVerificationResult, DatabaseLoginConfig, DATABASE_LOGIN_CONFIGS, AuthOptions } from './types';
 
@@ -50,16 +49,9 @@ class ServerSideVerifier {
     
     try {
       // Dynamic import to avoid bundling Puppeteer in client code
-      const puppeteerModule = await import('puppeteer').catch(() => {
-        console.error('Failed to import puppeteer');
-        return { default: null };
-      });
+      const puppeteer = require('puppeteer');
       
-      if (!puppeteerModule.default) {
-        throw new Error('Failed to load puppeteer module');
-      }
-      
-      this.browser = await puppeteerModule.default.launch({
+      this.browser = await puppeteer.launch({
         headless: options.headless !== false,
         args: [
           '--no-sandbox',
@@ -101,8 +93,6 @@ class ServerSideVerifier {
       }
     }
     
-    // We're using dynamic import, but this time without directly depending on puppeteer imports
-    // that might cause client-side issues
     const page = await this.browser.newPage();
     
     try {
@@ -180,26 +170,17 @@ class ServerSideVerifier {
   }
 }
 
-// Create a safer environment check that works in all JavaScript environments
+// Explicitly check if we're in a browser environment
 const isBrowser = typeof window !== 'undefined' && typeof window.document !== 'undefined';
 
-// Use a factory function instead of direct instantiation to avoid any importing issues
-function createVerifier() {
-  if (isBrowser) {
-    console.log('Creating client-side credential verifier');
+// Create the appropriate verifier based on the environment
+const credentialVerifier = isBrowser ? new ClientSideVerifier() : (() => {
+  try {
+    return new ServerSideVerifier();
+  } catch (error) {
+    console.error('Failed to initialize ServerSideVerifier, falling back to ClientSideVerifier:', error);
     return new ClientSideVerifier();
-  } else {
-    console.log('Creating server-side credential verifier');
-    try {
-      return new ServerSideVerifier();
-    } catch (error) {
-      console.error('Failed to create ServerSideVerifier, falling back to ClientSideVerifier', error);
-      return new ClientSideVerifier();
-    }
   }
-}
-
-// Safely create the appropriate verifier
-const credentialVerifier = createVerifier();
+})();
 
 export { credentialVerifier };
