@@ -31,6 +31,8 @@ export default defineConfig(({ mode }) => ({
       // Externalize server-only dependencies
       external: [
         'puppeteer',
+        'proxy-agent',
+        '@puppeteer/browsers',
         'fs',
         'path',
         'http',
@@ -44,7 +46,7 @@ export default defineConfig(({ mode }) => ({
   },
   // Properly handling Node.js built-ins
   optimizeDeps: {
-    exclude: ['puppeteer'],
+    exclude: ['puppeteer', 'proxy-agent', '@puppeteer/browsers'],
     esbuildOptions: {
       define: {
         global: 'globalThis',
@@ -54,7 +56,7 @@ export default defineConfig(({ mode }) => ({
           name: 'node-globals-polyfill',
           setup(build) {
             // Use browser-compatible versions if available
-            build.onResolve({ filter: /^(stream|http|https|zlib|url|crypto|fs|path)$/ }, () => {
+            build.onResolve({ filter: /^(stream|http|https|zlib|url|crypto|fs|path|proxy-agent|puppeteer)$/ }, () => {
               return { external: true };
             });
           },

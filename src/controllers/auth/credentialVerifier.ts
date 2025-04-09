@@ -1,4 +1,3 @@
-
 import { CredentialsStore } from '../../models/Database';
 import { CredentialVerificationResult, DatabaseLoginConfig, DATABASE_LOGIN_CONFIGS, AuthOptions } from './types';
 
@@ -91,8 +90,8 @@ class ServerSideVerifier {
       }
     }
     
-    // Since we're using dynamic import, we need to import puppeteer again
-    const puppeteer = await import('puppeteer');
+    // We're using dynamic import, but this time without directly depending on puppeteer imports
+    // that might cause client-side issues
     const page = await this.browser.newPage();
     
     try {
@@ -170,14 +169,11 @@ class ServerSideVerifier {
   }
 }
 
-// Determine which implementation to use based on environment
-let credentialVerifier: ClientSideVerifier | ServerSideVerifier;
+// Create a safer environment check that works in all JavaScript environments
+const isBrowser = typeof window !== 'undefined' && typeof window.document !== 'undefined';
 
-// Check if we're in a browser environment
-const isBrowser = typeof window !== 'undefined';
-
-// Use the appropriate implementation
-credentialVerifier = isBrowser 
+// Use the appropriate implementation based on environment
+const credentialVerifier = isBrowser 
   ? new ClientSideVerifier() 
   : new ServerSideVerifier();
 
