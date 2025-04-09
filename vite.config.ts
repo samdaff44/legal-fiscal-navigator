@@ -41,6 +41,14 @@ export default defineConfig(({ mode }) => ({
         'url',
         'zlib',
         'crypto',
+        'util',
+        'net',
+        'tls',
+        'events',
+        'assert',
+        'os',
+        'buffer',
+        'querystring',
       ],
     },
   },
@@ -56,7 +64,7 @@ export default defineConfig(({ mode }) => ({
           name: 'node-globals-polyfill',
           setup(build) {
             // Use browser-compatible versions if available
-            build.onResolve({ filter: /^(stream|http|https|zlib|url|crypto|fs|path|proxy-agent|puppeteer)$/ }, () => {
+            build.onResolve({ filter: /^(stream|http|https|zlib|url|crypto|fs|path|proxy-agent|puppeteer|@puppeteer\/browsers)$/ }, () => {
               return { external: true };
             });
           },

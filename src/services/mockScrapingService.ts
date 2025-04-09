@@ -14,7 +14,7 @@ export async function searchAllSites(query: string): Promise<SearchResult[]> {
       id: 'mock-1',
       title: `Résultat pour "${query}"`,
       excerpt: 'Ceci est un résultat simulé pour la démonstration côté client.',
-      source: 'Simulation Client',
+      source: 'Lexis Nexis', // Using a valid source from the enum
       type: 'jurisprudence',
       date: new Date().toISOString().split('T')[0],
       url: '#',
