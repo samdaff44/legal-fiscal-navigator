@@ -52,25 +52,29 @@ const isBrowser = typeof window !== 'undefined' && typeof window.document !== 'u
       console.log('Browser environment detected, using mock scraping service');
       
       // Use dynamic import with error handling for the mock implementation
-      import('./mockScrapingService')
-        .then((mockModule) => {
-          searchAllSites = mockModule.searchAllSites;
-          scrapingRateLimiter = mockModule.scrapingRateLimiter;
-          console.log('Mock scraping service loaded successfully');
-        })
-        .catch((err) => {
-          console.error('Failed to load mock scraping module:', err);
-          // Keep using the fallbacks defined above
-        });
-    } else {
-      console.log('Server environment detected, using real scraping service');
-      
-      // Try to load the server-side implementation
       try {
+        const mockModule = await import('./mockScrapingService');
+        searchAllSites = mockModule.searchAllSites;
+        scrapingRateLimiter = mockModule.scrapingRateLimiter;
+        console.log('Mock scraping service loaded successfully');
+      } catch (err) {
+        console.error('Failed to load mock scraping module:', err);
+        // Keep using the fallbacks defined above
+      }
+    } else {
+      console.log('Server environment detected, attempting to load real scraping service');
+      
+      // Try to load the server-side implementation with explicit error handling
+      try {
+        // Use a different dynamic import approach to avoid bundling issues
         const serverModule = await import('./scrapingService');
-        searchAllSites = serverModule.searchAllSites;
-        scrapingRateLimiter = serverModule.scrapingRateLimiter;
-        console.log('Server-side scraping service loaded successfully');
+        if (typeof serverModule.searchAllSites === 'function') {
+          searchAllSites = serverModule.searchAllSites;
+          scrapingRateLimiter = serverModule.scrapingRateLimiter;
+          console.log('Server-side scraping service loaded successfully');
+        } else {
+          throw new Error('Invalid server module structure');
+        }
       } catch (err) {
         console.error('Failed to load server-side scraping module:', err);
         

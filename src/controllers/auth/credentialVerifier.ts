@@ -38,10 +38,11 @@ class ClientSideVerifier {
   }
 }
 
-// This class will only be instantiated on the server
+// This class will be available on the server only
 class ServerSideVerifier {
   private browser: any = null;
   
+  // Server-side implementation that uses dynamic imports
   async initBrowser(options: AuthOptions = {}): Promise<any> {
     if (this.browser) {
       return this.browser;
@@ -49,9 +50,16 @@ class ServerSideVerifier {
     
     try {
       // Dynamic import to avoid bundling Puppeteer in client code
-      const puppeteer = await import('puppeteer');
+      const puppeteerModule = await import('puppeteer').catch(() => {
+        console.error('Failed to import puppeteer');
+        return { default: null };
+      });
       
-      this.browser = await puppeteer.default.launch({
+      if (!puppeteerModule.default) {
+        throw new Error('Failed to load puppeteer module');
+      }
+      
+      this.browser = await puppeteerModule.default.launch({
         headless: options.headless !== false,
         args: [
           '--no-sandbox',
@@ -176,17 +184,22 @@ class ServerSideVerifier {
 const isBrowser = typeof window !== 'undefined' && typeof window.document !== 'undefined';
 
 // Use a factory function instead of direct instantiation to avoid any importing issues
-const createVerifier = (): ClientSideVerifier | ServerSideVerifier => {
+function createVerifier() {
   if (isBrowser) {
     console.log('Creating client-side credential verifier');
     return new ClientSideVerifier();
   } else {
     console.log('Creating server-side credential verifier');
-    return new ServerSideVerifier();
+    try {
+      return new ServerSideVerifier();
+    } catch (error) {
+      console.error('Failed to create ServerSideVerifier, falling back to ClientSideVerifier', error);
+      return new ClientSideVerifier();
+    }
   }
-};
+}
 
 // Safely create the appropriate verifier
 const credentialVerifier = createVerifier();
 
-export { credentialVerifier, ClientSideVerifier, ServerSideVerifier };
+export { credentialVerifier };
