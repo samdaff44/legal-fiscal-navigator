@@ -1,4 +1,3 @@
 
-// This is a re-export file to maintain compatibility
-// Direct export from the hooks directory
+// Ce fichier réexporte simplement pour maintenir la compatibilité
 export { useToast, toast } from "@/hooks/use-toast";

@@ -110,7 +110,7 @@ export const useSearchResults = ({ query, filters, sortOrder }: UseSearchResults
     };
     
     fetchResults();
-  }, [query, filters, sortOrder, toast]);
+  }, [query, filters, sortOrder]); // Remove toast from dependencies to prevent re-renders
 
   /**
    * Bascule l'état d'expansion d'un résultat

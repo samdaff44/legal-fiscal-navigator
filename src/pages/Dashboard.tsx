@@ -1,11 +1,11 @@
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
 import SearchBar from '@/components/SearchBar';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Database, Book, FileClock } from 'lucide-react';
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { getAccessibleDatabases } from '@/models/Database'; 
 import { searchController } from '@/controllers/search';
 import { authController } from '@/controllers/authController';
@@ -71,14 +71,14 @@ const Dashboard = () => {
     
     // Mark initial check as done, this prevents the effect from running again
     setInitialCheckDone(true);
-  }, [initialCheckDone]); // Remove navigate and toast from dependencies
+  }, [initialCheckDone]); // Remove navigate and toast from dependencies to prevent re-renders
 
   /**
    * Lance une recherche à partir de l'historique
    */
-  const handleHistorySearch = (query: string) => {
+  const handleHistorySearch = useCallback((query: string) => {
     navigate('/results', { state: { query } });
-  };
+  }, [navigate]);
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
