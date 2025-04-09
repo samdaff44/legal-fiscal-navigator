@@ -23,17 +23,15 @@ const Dashboard = () => {
   const [recentSearches, setRecentSearches] = useState<SearchHistory[]>([]);
   const [suggestedQueries, setSuggestedQueries] = useState<string[]>([]);
   const [databasesStatus, setDatabasesStatus] = useState<DatabaseStatus[]>([]);
-  // Added a flag to prevent re-rendering loop
   const [initialCheckDone, setInitialCheckDone] = useState(false);
 
   useEffect(() => {
     // Prevent multiple executions of the effect
     if (initialCheckDone) return;
     
-    // Authentication check
-    if (!authController.isAuthenticated()) {
-      // Move navigation and toast outside of render cycle
-      setTimeout(() => {
+    const runInitialChecks = () => {
+      // Authentication check
+      if (!authController.isAuthenticated()) {
         toast({
           title: "Identifiants manquants",
           description: "Veuillez d'abord configurer vos identifiants",
@@ -41,37 +39,39 @@ const Dashboard = () => {
           duration: 5000,
         });
         navigate('/');
-      }, 0);
-      setInitialCheckDone(true);
-      return;
-    }
-
-    // Get accessible databases - moved inside the effect
-    const accessibleDatabases = getAccessibleDatabases();
+        return;
+      }
+  
+      // Get accessible databases
+      const accessibleDatabases = getAccessibleDatabases();
+      
+      // Set database status
+      setDatabasesStatus(
+        accessibleDatabases.map(name => ({
+          name,
+          status: "connected",
+          lastChecked: new Date().toISOString()
+        }))
+      );
+  
+      // Set search history
+      setRecentSearches(searchController.getSearchHistory());
+  
+      // Set suggested queries
+      setSuggestedQueries([
+        "Déclaration fiscale obligations",
+        "Jurisprudence TVA immobilier",
+        "Contrôle fiscal droits",
+        "Fiscalité internationale conventions"
+      ]);
+    };
     
-    // Set database status
-    setDatabasesStatus(
-      accessibleDatabases.map(name => ({
-        name,
-        status: "connected",
-        lastChecked: new Date().toISOString()
-      }))
-    );
-
-    // Set search history
-    setRecentSearches(searchController.getSearchHistory());
-
-    // Set suggested queries
-    setSuggestedQueries([
-      "Déclaration fiscale obligations",
-      "Jurisprudence TVA immobilier",
-      "Contrôle fiscal droits",
-      "Fiscalité internationale conventions"
-    ]);
+    // Use setTimeout to avoid triggering state updates during render
+    setTimeout(runInitialChecks, 0);
     
-    // Mark initial check as done
+    // Mark initial check as done, this prevents the effect from running again
     setInitialCheckDone(true);
-  }, [initialCheckDone, navigate, toast]);
+  }, [initialCheckDone]); // Remove navigate and toast from dependencies
 
   /**
    * Lance une recherche à partir de l'historique
