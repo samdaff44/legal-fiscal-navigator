@@ -23,24 +23,33 @@ const Dashboard = () => {
   const [recentSearches, setRecentSearches] = useState<SearchHistory[]>([]);
   const [suggestedQueries, setSuggestedQueries] = useState<string[]>([]);
   const [databasesStatus, setDatabasesStatus] = useState<DatabaseStatus[]>([]);
+  // Added a flag to prevent re-rendering loop
+  const [initialCheckDone, setInitialCheckDone] = useState(false);
 
   useEffect(() => {
-    // Vérifie si l'utilisateur est authentifié
+    // Prevent multiple executions of the effect
+    if (initialCheckDone) return;
+    
+    // Authentication check
     if (!authController.isAuthenticated()) {
-      toast({
-        title: "Identifiants manquants",
-        description: "Veuillez d'abord configurer vos identifiants",
-        variant: "destructive",
-        duration: 5000,
-      });
-      navigate('/');
+      // Move navigation and toast outside of render cycle
+      setTimeout(() => {
+        toast({
+          title: "Identifiants manquants",
+          description: "Veuillez d'abord configurer vos identifiants",
+          variant: "destructive",
+          duration: 5000,
+        });
+        navigate('/');
+      }, 0);
+      setInitialCheckDone(true);
       return;
     }
 
-    // Récupère les bases de données accessibles
+    // Get accessible databases - moved inside the effect
     const accessibleDatabases = getAccessibleDatabases();
     
-    // Définit le statut des connexions aux bases de données
+    // Set database status
     setDatabasesStatus(
       accessibleDatabases.map(name => ({
         name,
@@ -49,17 +58,20 @@ const Dashboard = () => {
       }))
     );
 
-    // Récupère l'historique des recherches
+    // Set search history
     setRecentSearches(searchController.getSearchHistory());
 
-    // Suggestions de recherches (données fictives)
+    // Set suggested queries
     setSuggestedQueries([
       "Déclaration fiscale obligations",
       "Jurisprudence TVA immobilier",
       "Contrôle fiscal droits",
       "Fiscalité internationale conventions"
     ]);
-  }, [navigate, toast]);
+    
+    // Mark initial check as done
+    setInitialCheckDone(true);
+  }, [initialCheckDone, navigate, toast]);
 
   /**
    * Lance une recherche à partir de l'historique
