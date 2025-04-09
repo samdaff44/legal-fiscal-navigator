@@ -27,12 +27,14 @@ class ClientSideVerifier {
     };
   }
   
-  async initBrowser(): Promise<any> {
+  async initBrowser(options: AuthOptions = {}): Promise<any> {
+    console.log('Client-side browser initialization (no-op)');
     return null;
   }
   
   async closeBrowser(): Promise<void> {
     // No-op for client
+    console.log('Client-side browser close (no-op)');
   }
 }
 
@@ -173,9 +175,18 @@ class ServerSideVerifier {
 // Create a safer environment check that works in all JavaScript environments
 const isBrowser = typeof window !== 'undefined' && typeof window.document !== 'undefined';
 
-// Use the appropriate implementation based on environment
-const credentialVerifier = isBrowser 
-  ? new ClientSideVerifier() 
-  : new ServerSideVerifier();
+// Use a factory function instead of direct instantiation to avoid any importing issues
+const createVerifier = (): ClientSideVerifier | ServerSideVerifier => {
+  if (isBrowser) {
+    console.log('Creating client-side credential verifier');
+    return new ClientSideVerifier();
+  } else {
+    console.log('Creating server-side credential verifier');
+    return new ServerSideVerifier();
+  }
+};
+
+// Safely create the appropriate verifier
+const credentialVerifier = createVerifier();
 
 export { credentialVerifier, ClientSideVerifier, ServerSideVerifier };

@@ -49,13 +49,18 @@ export default defineConfig(({ mode }) => ({
         'os',
         'buffer',
         'querystring',
+        'http-proxy-agent',
+        'https-proxy-agent',
+        'socks-proxy-agent',
+        'pac-proxy-agent',
+        'agent-base',
         // Add all other Node.js built-ins here
       ],
     },
   },
   // Properly handling Node.js built-ins
   optimizeDeps: {
-    exclude: ['puppeteer', 'proxy-agent', '@puppeteer/browsers'],
+    exclude: ['puppeteer', 'proxy-agent', '@puppeteer/browsers', 'http-proxy-agent', 'https-proxy-agent', 'socks-proxy-agent', 'pac-proxy-agent', 'agent-base'],
     esbuildOptions: {
       define: {
         global: 'globalThis',
@@ -64,8 +69,13 @@ export default defineConfig(({ mode }) => ({
         {
           name: 'node-globals-polyfill',
           setup(build) {
-            // Block all server-side imports that shouldn't be in the browser
-            build.onResolve({ filter: /^(puppeteer|proxy-agent|@puppeteer\/browsers|fs|path|crypto|http|https|stream|url|zlib|util|net|tls|events|assert|os|buffer|querystring)$/ }, () => {
+            // More aggressive blocking of server-side imports
+            build.onResolve({ filter: /^(puppeteer|proxy-agent|@puppeteer\/browsers|fs|path|crypto|http|https|stream|url|zlib|util|net|tls|events|assert|os|buffer|querystring|http-proxy-agent|https-proxy-agent|socks-proxy-agent|pac-proxy-agent|agent-base)$/ }, () => {
+              return { external: true };
+            });
+            
+            // Block any imports from node_modules that include these patterns
+            build.onResolve({ filter: /node_modules\/(puppeteer|proxy-agent|@puppeteer\/browsers)/ }, () => {
               return { external: true };
             });
           },
