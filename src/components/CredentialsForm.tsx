@@ -1,10 +1,8 @@
 
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { 
   Card, 
   CardContent, 
@@ -13,9 +11,12 @@ import {
   CardHeader, 
   CardTitle 
 } from "@/components/ui/card";
-import { Database, Lock, Shield, ExternalLink, InfoIcon } from 'lucide-react';
+import { Database, Lock, Shield, ExternalLink } from 'lucide-react';
 import { CredentialsStore, DATABASE_NAMES, DATABASE_URLS } from '@/models/Database';
 import { useAuth } from '@/hooks/useAuth';
+import DatabaseSelector from './credentials/DatabaseSelector';
+import CredentialInput from './credentials/CredentialInput';
+import SecurityNotice from './credentials/SecurityNotice';
 
 /**
  * Composant de formulaire d'identifiants pour les bases de données
@@ -83,17 +84,9 @@ const CredentialsForm = () => {
    * Vérifie si le formulaire est valide
    */
   const isFormValid = () => {
-    // Vérifie si au moins une base de données a un nom d'utilisateur et un mot de passe
     return Object.values(credentials).some(db => 
       db.username.trim() !== "" && db.password.trim() !== ""
     );
-  };
-
-  /**
-   * Visite le site web de la base de données
-   */
-  const visitDatabaseWebsite = (url: string) => {
-    window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   return (
@@ -109,31 +102,14 @@ const CredentialsForm = () => {
       </CardHeader>
       
       <CardContent>
-        <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3 mb-6 flex items-start">
-          <InfoIcon className="text-amber-600 dark:text-amber-400 h-5 w-5 mr-3 mt-0.5 flex-shrink-0" />
-          <p className="text-sm text-amber-800 dark:text-amber-300">
-            Vos identifiants seront chiffrés et stockés localement sur votre appareil. 
-            Une session active expirera automatiquement après 30 minutes d'inactivité.
-          </p>
-        </div>
+        <SecurityNotice />
       
         <form onSubmit={handleSubmit}>
-          <div className="flex border rounded-lg overflow-hidden mb-6">
-            {(Object.keys(credentials) as Array<keyof CredentialsStore>).map((db) => (
-              <button
-                key={db}
-                type="button"
-                className={`flex-1 py-2 px-3 text-sm font-medium transition-all ${
-                  activeDatabase === db
-                    ? "bg-primary text-primary-foreground"
-                    : "hover:bg-secondary"
-                }`}
-                onClick={() => setActiveDatabase(db)}
-              >
-                {DATABASE_NAMES[db]}
-              </button>
-            ))}
-          </div>
+          <DatabaseSelector 
+            activeDatabase={activeDatabase}
+            setActiveDatabase={setActiveDatabase}
+            credentials={credentials}
+          />
 
           <div className="space-y-6 animate-fade-in">
             <div className="flex justify-between items-start mb-2">
@@ -150,38 +126,24 @@ const CredentialsForm = () => {
               </p>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor={`${activeDatabase}-username`}>
-                Identifiant {DATABASE_NAMES[activeDatabase]}
-              </Label>
-              <div className="relative">
-                <Input
-                  id={`${activeDatabase}-username`}
-                  value={credentials[activeDatabase].username}
-                  onChange={(e) => handleCredentialChange(activeDatabase, "username", e.target.value)}
-                  className="pl-10"
-                  placeholder="Entrez votre identifiant"
-                />
-                <Database className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-              </div>
-            </div>
+            <CredentialInput
+              id={`${activeDatabase}-username`}
+              label={`Identifiant ${DATABASE_NAMES[activeDatabase]}`}
+              value={credentials[activeDatabase].username}
+              onChange={(value) => handleCredentialChange(activeDatabase, "username", value)}
+              placeholder="Entrez votre identifiant"
+              Icon={Database}
+            />
 
-            <div className="space-y-2">
-              <Label htmlFor={`${activeDatabase}-password`}>
-                Mot de passe {DATABASE_NAMES[activeDatabase]}
-              </Label>
-              <div className="relative">
-                <Input
-                  id={`${activeDatabase}-password`}
-                  type="password"
-                  value={credentials[activeDatabase].password}
-                  onChange={(e) => handleCredentialChange(activeDatabase, "password", e.target.value)}
-                  className="pl-10"
-                  placeholder="Entrez votre mot de passe"
-                />
-                <Lock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-              </div>
-            </div>
+            <CredentialInput
+              id={`${activeDatabase}-password`}
+              label={`Mot de passe ${DATABASE_NAMES[activeDatabase]}`}
+              value={credentials[activeDatabase].password}
+              onChange={(value) => handleCredentialChange(activeDatabase, "password", value)}
+              type="password"
+              placeholder="Entrez votre mot de passe"
+              Icon={Lock}
+            />
           </div>
 
           <div className="mt-8">

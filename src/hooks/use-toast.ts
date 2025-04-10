@@ -7,7 +7,7 @@ import type {
 } from "@/components/ui/toast"
 
 const TOAST_LIMIT = 1
-const TOAST_REMOVE_DELAY = 1000000
+const TOAST_REMOVE_DELAY = 5000 // Réduit pour une meilleure expérience utilisateur
 
 type ToasterToast = ToastProps & {
   id: string
@@ -56,6 +56,10 @@ interface State {
 
 const toastTimeouts = new Map<string, ReturnType<typeof setTimeout>>()
 
+/**
+ * Ajoute un toast à la file d'attente pour sa suppression
+ * @param toastId - ID du toast à supprimer
+ */
 const addToRemoveQueue = (toastId: string) => {
   if (toastTimeouts.has(toastId)) {
     return
@@ -72,6 +76,9 @@ const addToRemoveQueue = (toastId: string) => {
   toastTimeouts.set(toastId, timeout)
 }
 
+/**
+ * Reducer pour gérer l'état des toasts
+ */
 export const reducer = (state: State, action: Action): State => {
   switch (action.type) {
     case "ADD_TOAST":
@@ -129,6 +136,10 @@ const listeners: Array<(state: State) => void> = []
 
 let memoryState: State = { toasts: [] }
 
+/**
+ * Dispatch une action pour modifier l'état des toasts
+ * @param action - L'action à dispatcher
+ */
 function dispatch(action: Action) {
   memoryState = reducer(memoryState, action)
   listeners.forEach((listener) => {
@@ -138,6 +149,11 @@ function dispatch(action: Action) {
 
 type Toast = Omit<ToasterToast, "id">
 
+/**
+ * Fonction pour créer un toast
+ * @param props - Propriétés du toast
+ * @returns - Objet avec fonctions pour gérer le toast
+ */
 function toast({ ...props }: Toast) {
   const id = genId()
 
@@ -167,6 +183,10 @@ function toast({ ...props }: Toast) {
   }
 }
 
+/**
+ * Hook pour utiliser le système de toast
+ * @returns - État et fonctions pour gérer les toasts
+ */
 function useToast() {
   const [state, setState] = React.useState<State>(memoryState)
 

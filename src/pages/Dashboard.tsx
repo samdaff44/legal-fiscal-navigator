@@ -1,10 +1,8 @@
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
 import SearchBar from '@/components/SearchBar';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Database, Book, FileClock } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { getAccessibleDatabases } from '@/models/Database'; 
 import { searchController } from '@/controllers/search';
@@ -15,64 +13,80 @@ import SuggestedSearches from '@/components/dashboard/SuggestedSearches';
 import DatabaseStatusDisplay from '@/components/dashboard/DatabaseStatus';
 
 /**
+ * Suggestions de recherche
+ * Extraites en dehors du composant pour éviter des re-créations inutiles
+ */
+const SUGGESTED_QUERIES = [
+  "Déclaration fiscale obligations",
+  "Jurisprudence TVA immobilier",
+  "Contrôle fiscal droits",
+  "Fiscalité internationale conventions"
+];
+
+/**
  * Page de tableau de bord
  */
 const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [recentSearches, setRecentSearches] = useState<SearchHistory[]>([]);
-  const [suggestedQueries, setSuggestedQueries] = useState<string[]>([]);
   const [databasesStatus, setDatabasesStatus] = useState<DatabaseStatus[]>([]);
   const [initialCheckDone, setInitialCheckDone] = useState(false);
+  
+  // Mémorise les requêtes suggérées pour éviter les re-rendus
+  const suggestedQueries = useMemo(() => SUGGESTED_QUERIES, []);
 
+  // Effet pour la vérification initiale
   useEffect(() => {
-    // Prevent multiple executions of the effect
+    // Evite les exécutions multiples
     if (initialCheckDone) return;
     
     const runInitialChecks = () => {
-      // Authentication check
-      if (!authController.isAuthenticated()) {
+      try {
+        // Vérification d'authentification
+        if (!authController.isAuthenticated()) {
+          toast({
+            title: "Identifiants manquants",
+            description: "Veuillez d'abord configurer vos identifiants",
+            variant: "destructive",
+            duration: 5000,
+          });
+          navigate('/');
+          return;
+        }
+    
+        // Récupération des bases de données accessibles
+        const accessibleDatabases = getAccessibleDatabases();
+        
+        // Définition du statut des bases de données
+        setDatabasesStatus(
+          accessibleDatabases.map(name => ({
+            name,
+            status: "connected",
+            lastChecked: new Date().toISOString()
+          }))
+        );
+    
+        // Récupération de l'historique de recherche
+        setRecentSearches(searchController.getSearchHistory());
+      } catch (error) {
+        console.error('Erreur lors des vérifications initiales:', error);
         toast({
-          title: "Identifiants manquants",
-          description: "Veuillez d'abord configurer vos identifiants",
+          title: "Erreur",
+          description: error instanceof Error ? error.message : "Une erreur est survenue",
           variant: "destructive",
           duration: 5000,
         });
-        navigate('/');
-        return;
       }
-  
-      // Get accessible databases
-      const accessibleDatabases = getAccessibleDatabases();
-      
-      // Set database status
-      setDatabasesStatus(
-        accessibleDatabases.map(name => ({
-          name,
-          status: "connected",
-          lastChecked: new Date().toISOString()
-        }))
-      );
-  
-      // Set search history
-      setRecentSearches(searchController.getSearchHistory());
-  
-      // Set suggested queries
-      setSuggestedQueries([
-        "Déclaration fiscale obligations",
-        "Jurisprudence TVA immobilier",
-        "Contrôle fiscal droits",
-        "Fiscalité internationale conventions"
-      ]);
     };
     
-    // Use setTimeout to avoid triggering state updates during render
+    // Utilise setTimeout pour éviter les mises à jour d'état pendant le rendu
     setTimeout(runInitialChecks, 0);
     
-    // Mark initial check as done, this prevents the effect from running again
+    // Marque la vérification initiale comme terminée
     setInitialCheckDone(true);
-  }, [initialCheckDone]); // Remove navigate and toast from dependencies to prevent re-renders
-
+  }, [initialCheckDone]); // Dépendances minimales
+  
   /**
    * Lance une recherche à partir de l'historique
    */

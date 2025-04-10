@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { SearchResult } from '@/models/SearchResult';
 import { searchController } from '@/controllers/search';
@@ -7,6 +7,7 @@ import { getAccessibleDatabases } from '@/models/Database';
 import { SearchFilters } from '@/types/search';
 import { copyToClipboard } from '@/utils/resultActions';
 import { SearchFilter } from '@/models/SearchResult';
+import { handleError, ErrorType } from '@/utils/errorHandling';
 
 interface UseSearchResultsProps {
   query: string;
@@ -27,6 +28,42 @@ export const useSearchResults = ({ query, filters, sortOrder }: UseSearchResults
   const [expandedResult, setExpandedResult] = useState<string | null>(null);
   const [searchedDatabases, setSearchedDatabases] = useState<string[]>([]);
 
+  // Convertit les filtres du format SearchFilters vers SearchFilter
+  const getConvertedFilters = useCallback((): SearchFilter | undefined => {
+    if (!filters) return undefined;
+    
+    const convertedFilters: SearchFilter = {};
+    
+    // Map sources and types directly
+    if (filters.sources) convertedFilters.sources = filters.sources;
+    if (filters.types) convertedFilters.types = filters.types;
+    
+    // Convert dateRange format
+    if (filters.dateRange) {
+      convertedFilters.dateRange = {
+        start: filters.dateRange.from ? filters.dateRange.from.toISOString() : undefined,
+        end: filters.dateRange.to ? filters.dateRange.to.toISOString() : undefined
+      };
+    }
+    
+    // Map other properties directly
+    if (filters.jurisdiction) convertedFilters.jurisdiction = filters.jurisdiction;
+    if (filters.court) convertedFilters.court = filters.court;
+    if (filters.author) convertedFilters.author = filters.author;
+    if (filters.publicationYears && filters.publicationYears.length > 0) {
+      convertedFilters.publicationYear = filters.publicationYears[0];
+    }
+    if (filters.categories) convertedFilters.categories = filters.categories;
+    if (filters.languages) convertedFilters.languages = filters.languages;
+    if (filters.country) convertedFilters.country = filters.country;
+    if (filters.relevanceThreshold) convertedFilters.relevanceThreshold = filters.relevanceThreshold;
+    if (filters.citationsThreshold) convertedFilters.minCitations = filters.citationsThreshold;
+    if (filters.maxResults) convertedFilters.maxResults = filters.maxResults;
+    
+    return convertedFilters;
+  }, [filters]);
+
+  // Effet pour récupérer les résultats de recherche
   useEffect(() => {
     const fetchResults = async () => {
       setIsLoading(true);
@@ -37,7 +74,10 @@ export const useSearchResults = ({ query, filters, sortOrder }: UseSearchResults
         const availableDatabases = getAccessibleDatabases();
         
         if (availableDatabases.length === 0) {
-          throw new Error("Aucun identifiant trouvé. Veuillez vous connecter d'abord.");
+          throw handleError(
+            new Error("Aucun identifiant trouvé. Veuillez vous connecter d'abord."),
+            { type: ErrorType.AUTHENTICATION, throwError: true }
+          );
         }
         
         setSearchedDatabases(availableDatabases);
@@ -48,42 +88,15 @@ export const useSearchResults = ({ query, filters, sortOrder }: UseSearchResults
           duration: 3000,
         });
         
-        // Convertir les filtres du format SearchFilters vers SearchFilter
-        const convertedFilters: SearchFilter = {};
+        const convertedFilters = getConvertedFilters();
         
-        if (filters) {
-          // Map sources and types directly
-          if (filters.sources) convertedFilters.sources = filters.sources;
-          if (filters.types) convertedFilters.types = filters.types;
-          
-          // Convert dateRange format
-          if (filters.dateRange) {
-            convertedFilters.dateRange = {
-              start: filters.dateRange.from ? filters.dateRange.from.toISOString() : undefined,
-              end: filters.dateRange.to ? filters.dateRange.to.toISOString() : undefined
-            };
-          }
-          
-          // Map other properties directly
-          if (filters.jurisdiction) convertedFilters.jurisdiction = filters.jurisdiction;
-          if (filters.court) convertedFilters.court = filters.court;
-          if (filters.author) convertedFilters.author = filters.author;
-          if (filters.publicationYears && filters.publicationYears.length > 0) {
-            convertedFilters.publicationYear = filters.publicationYears[0]; // Using the first year for simplicity
-          }
-          if (filters.categories) convertedFilters.categories = filters.categories;
-          if (filters.languages) convertedFilters.languages = filters.languages;
-          if (filters.country) convertedFilters.country = filters.country;
-          if (filters.relevanceThreshold) convertedFilters.relevanceThreshold = filters.relevanceThreshold;
-          if (filters.citationsThreshold) convertedFilters.minCitations = filters.citationsThreshold;
-          if (filters.maxResults) convertedFilters.maxResults = filters.maxResults;
-        }
-        
+        // Effectue la recherche dans toutes les bases de données
         const searchResults = await searchController.searchAllDatabases({ 
           query,
           filters: convertedFilters,
           sortOrder
         });
+        
         setResults(searchResults);
         
         // Ajoute la recherche à l'historique
@@ -95,12 +108,17 @@ export const useSearchResults = ({ query, filters, sortOrder }: UseSearchResults
           duration: 3000,
         });
       } catch (err) {
-        console.error('Erreur de recherche:', err);
-        setError(err instanceof Error ? err.message : "Une erreur est survenue lors de la recherche");
+        const appError = handleError(err, {
+          type: ErrorType.API,
+          showToast: false,
+          throwError: false
+        });
+        
+        setError(appError.message);
         
         toast({
           title: "Erreur de recherche",
-          description: err instanceof Error ? err.message : "Une erreur est survenue lors de la recherche",
+          description: appError.message,
           variant: "destructive",
           duration: 5000,
         });
@@ -110,38 +128,35 @@ export const useSearchResults = ({ query, filters, sortOrder }: UseSearchResults
     };
     
     fetchResults();
-  }, [query, filters, sortOrder]); // Remove toast from dependencies to prevent re-renders
+  }, [query, getConvertedFilters, sortOrder]); // Dépendances optimisées
 
   /**
    * Bascule l'état d'expansion d'un résultat
-   * @param {string} id - Identifiant du résultat
    */
-  const toggleExpand = (id: string) => {
-    setExpandedResult(expandedResult === id ? null : id);
-  };
+  const toggleExpand = useCallback((id: string) => {
+    setExpandedResult(prevId => prevId === id ? null : id);
+  }, []);
 
   /**
    * Copie le texte dans le presse-papier
-   * @param {string} text - Texte à copier
    */
-  const handleCopy = async (text: string) => {
-    const success = await copyToClipboard(text);
-    
-    if (success) {
-      toast({
-        title: "Copié",
-        description: "Le texte a été copié dans le presse-papier",
-        duration: 3000,
-      });
-    } else {
-      toast({
-        title: "Erreur",
-        description: "Impossible de copier le texte dans le presse-papier",
-        variant: "destructive",
-        duration: 3000,
-      });
+  const handleCopy = useCallback(async (text: string) => {
+    try {
+      const success = await copyToClipboard(text);
+      
+      if (success) {
+        toast({
+          title: "Copié",
+          description: "Le texte a été copié dans le presse-papier",
+          duration: 3000,
+        });
+      } else {
+        throw new Error("Impossible de copier le texte dans le presse-papier");
+      }
+    } catch (err) {
+      handleError(err, { type: ErrorType.UNKNOWN });
     }
-  };
+  }, [toast]);
 
   return {
     results,
