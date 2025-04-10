@@ -1,8 +1,7 @@
 
 import { ReactNode } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { useToast } from '@/hooks/use-toast';
 import { handleError, ErrorType } from '@/utils/errorHandling';
 
 interface ProtectedRouteProps {
@@ -14,29 +13,22 @@ interface ProtectedRouteProps {
  */
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { isAuthenticated } = useAuth();
-  const { toast } = useToast();
+  const location = useLocation();
   
-  // Si l'utilisateur n'est pas authentifié, rediriger vers la page d'accueil
+  // Si l'utilisateur n'est pas authentifié, rediriger vers la page d'accueil avec un paramètre indiquant qu'il faut afficher le formulaire
   if (!isAuthenticated) {
     // Utilisation du système de gestion d'erreurs unifié
     handleError(
       new Error("Veuillez d'abord configurer vos identifiants"),
       {
         type: ErrorType.AUTHENTICATION,
-        showToast: false,
+        showToast: true,
         logToConsole: false
       }
     );
     
-    // Afficher un message à l'utilisateur
-    toast({
-      title: "Identifiants manquants",
-      description: "Veuillez d'abord configurer vos identifiants",
-      variant: "destructive",
-      duration: 5000,
-    });
-    
-    return <Navigate to="/" replace />;
+    // Rediriger vers la page d'accueil avec un paramètre pour afficher le formulaire d'identifiants
+    return <Navigate to="/?showCredentials=true" state={{ from: location }} replace />;
   }
   
   return <>{children}</>;
