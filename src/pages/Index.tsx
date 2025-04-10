@@ -4,10 +4,12 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import Header from '@/components/Header';
 import CredentialsForm from '@/components/CredentialsForm';
 import { Button } from "@/components/ui/button";
-import { Search, Database, Shield, ArrowRight } from 'lucide-react';
+import { Search, Database, Shield, ArrowRight, Info } from 'lucide-react';
+import { useToast } from "@/hooks/use-toast";
 
 const Index = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [searchParams] = useSearchParams();
   const showCredentials = searchParams.get('showCredentials') === 'true';
   const [hasCredentials, setHasCredentials] = useState(false);
@@ -24,6 +26,15 @@ const Index = () => {
     // Si showCredentials est true, afficher directement le formulaire d'identifiants
     if (showCredentials) {
       setDisplayCredentialsForm(true);
+      
+      // Afficher un message d'information sur la simulation
+      toast({
+        title: "Mode démonstration",
+        description: "Pour ce prototype, les identifiants ne sont pas réellement vérifiés. Entrez n'importe quels identifiants pour continuer.",
+        variant: "default",
+        duration: 6000,
+        action: <Button variant="outline" size="sm" onClick={() => {}} className="flex items-center"><Info className="mr-2 h-4 w-4" />Compris</Button>,
+      });
     }
 
     // Disable intro animation after 2 seconds
@@ -32,12 +43,19 @@ const Index = () => {
     }, 2000);
 
     return () => clearTimeout(timer);
-  }, [showCredentials]);
+  }, [showCredentials, toast]);
 
   const handleContinue = () => {
     // Si l'utilisateur n'a pas d'identifiants, afficher le formulaire au lieu de naviguer
     if (!hasCredentials) {
       setDisplayCredentialsForm(true);
+      
+      toast({
+        title: "Identifiants requis",
+        description: "Veuillez configurer vos identifiants avant d'accéder au dashboard.",
+        variant: "default",
+        duration: 4000,
+      });
     } else {
       navigate('/dashboard');
     }
