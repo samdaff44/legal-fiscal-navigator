@@ -16,12 +16,13 @@ export enum ErrorType {
 }
 
 // Interface pour les options de gestion d'erreur
-interface ErrorHandlingOptions {
+export interface ErrorHandlingOptions {
   showToast?: boolean;
   logToConsole?: boolean;
   logToService?: boolean;
   throwError?: boolean;
   onError?: (error: AppError) => void;
+  type?: ErrorType; // Ajout de la propriété type à l'interface
 }
 
 // Options par défaut
@@ -84,7 +85,7 @@ export const handleError = (
     ? error 
     : new AppError(
         error instanceof Error ? error.message : 'Une erreur est survenue',
-        ErrorType.UNKNOWN,
+        opts.type || ErrorType.UNKNOWN,
         error
       );
   
