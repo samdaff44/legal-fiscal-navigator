@@ -11,7 +11,7 @@ import {
   CardHeader, 
   CardTitle 
 } from "@/components/ui/card";
-import { Database, Lock, Shield, ExternalLink } from 'lucide-react';
+import { Database, Lock, Shield, ExternalLink, Info } from 'lucide-react';
 import { CredentialsStore, DATABASE_NAMES, DATABASE_URLS } from '@/models/Database';
 import { useAuth } from '@/hooks/useAuth';
 import DatabaseSelector from './credentials/DatabaseSelector';
@@ -65,6 +65,15 @@ const CredentialsForm = () => {
         title: "Identifiants enregistrés",
         description: `Vos identifiants pour ${connectedDatabases.length} base${connectedDatabases.length > 1 ? 's' : ''} de données ont été enregistrés`,
         duration: 3000,
+      });
+      
+      // Message informatif sur la simulation
+      toast({
+        title: "Mode démonstration",
+        description: "En mode réel, les identifiants seraient vérifiés sur les bases de données cibles.",
+        variant: "default",
+        icon: <Info className="h-4 w-4 text-blue-500" />,
+        duration: 5000,
       });
       
       navigate('/dashboard');

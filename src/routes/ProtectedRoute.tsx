@@ -19,7 +19,7 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   if (!isAuthenticated) {
     // Utilisation du système de gestion d'erreurs unifié
     handleError(
-      new Error("Veuillez d'abord configurer vos identifiants"),
+      new Error("Vous devez configurer vos identifiants pour accéder à cette page"),
       {
         type: ErrorType.AUTHENTICATION,
         showToast: true,
