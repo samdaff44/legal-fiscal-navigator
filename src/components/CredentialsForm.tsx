@@ -70,9 +70,13 @@ const CredentialsForm = () => {
       // Message informatif sur la simulation
       toast({
         title: "Mode démonstration",
-        description: "En mode réel, les identifiants seraient vérifiés sur les bases de données cibles.",
+        description: (
+          <div className="flex items-start">
+            <Info className="h-4 w-4 text-blue-500 mr-2 mt-0.5 flex-shrink-0" />
+            <span>En mode réel, les identifiants seraient vérifiés sur les bases de données cibles.</span>
+          </div>
+        ),
         variant: "default",
-        icon: <Info className="h-4 w-4 text-blue-500" />,
         duration: 5000,
       });
       
