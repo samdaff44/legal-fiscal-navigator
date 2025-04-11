@@ -61,6 +61,9 @@ const CredentialsForm = () => {
     setIsSubmitting(true);
     
     try {
+      // On simule un délai pour le mode démonstration
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
       // Tentative de connexion via le hook d'authentification
       const connectedDatabases = await login(credentials);
       
@@ -86,7 +89,7 @@ const CredentialsForm = () => {
       // Utiliser setTimeout pour éviter les mises à jour d'état rapides qui peuvent causer des problèmes
       setTimeout(() => {
         navigate('/dashboard');
-      }, 100);
+      }, 800);
       
     } catch (error) {
       toast({
