@@ -55,6 +55,9 @@ const CredentialsForm = () => {
    */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (isSubmitting) return; // Éviter les soumissions multiples
+    
     setIsSubmitting(true);
     
     try {
@@ -80,7 +83,11 @@ const CredentialsForm = () => {
         duration: 5000,
       });
       
-      navigate('/dashboard');
+      // Utiliser setTimeout pour éviter les mises à jour d'état rapides qui peuvent causer des problèmes
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 100);
+      
     } catch (error) {
       toast({
         title: "Erreur",
