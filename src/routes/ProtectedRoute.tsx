@@ -1,5 +1,5 @@
 
-import { ReactNode } from 'react';
+import { ReactNode, useEffect, useRef } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { handleError, ErrorType } from '@/utils/errorHandling';
@@ -14,19 +14,31 @@ interface ProtectedRouteProps {
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { isAuthenticated } = useAuth();
   const location = useLocation();
+  const hasShownError = useRef(false);
+  
+  // Réinitialiser le flag d'erreur lors d'un changement de route
+  useEffect(() => {
+    return () => {
+      hasShownError.current = false;
+    };
+  }, [location.pathname]);
   
   // Si l'utilisateur n'est pas authentifié, rediriger vers la page d'accueil avec un paramètre indiquant qu'il faut afficher le formulaire
   if (!isAuthenticated) {
-    // Utilisation du système de gestion d'erreurs unifié (une seule fois lors de la redirection)
-    if (location.pathname !== '/') {
-      handleError(
-        new Error("Vous devez configurer vos identifiants pour accéder à cette page"),
-        {
-          type: ErrorType.AUTHENTICATION,
-          showToast: true,
-          logToConsole: false
-        }
-      );
+    // Utilisation du système de gestion d'erreurs unifié (une seule fois par session)
+    if (location.pathname !== '/' && !hasShownError.current) {
+      hasShownError.current = true;
+      
+      setTimeout(() => {
+        handleError(
+          new Error("Vous devez configurer vos identifiants pour accéder à cette page"),
+          {
+            type: ErrorType.AUTHENTICATION,
+            showToast: true,
+            logToConsole: false
+          }
+        );
+      }, 100);
     }
     
     // Rediriger vers la page d'accueil avec un paramètre pour afficher le formulaire d'identifiants

@@ -52,6 +52,13 @@ class AuthController {
     }
     
     try {
+      // En mode démonstration, on considère tous les identifiants comme valides
+      // Sauvegarde les identifiants directement
+      saveCredentials(credentials);
+      
+      return databasesWithCredentials;
+      
+      /* Version originale avec vérification des identifiants - désactivée pour le mode démo
       // Initialisation du navigateur pour la vérification
       await credentialVerifier.initBrowser(options);
       
@@ -87,6 +94,7 @@ class AuthController {
       saveCredentials(credentials);
       
       return connectedDatabases;
+      */
     } catch (error) {
       console.error("Erreur lors de la connexion:", error);
       throw new Error("Une erreur est survenue lors de la connexion aux bases de données");
