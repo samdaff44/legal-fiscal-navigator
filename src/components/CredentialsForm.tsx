@@ -64,8 +64,22 @@ const CredentialsForm = () => {
       // On simule un délai pour le mode démonstration
       await new Promise(resolve => setTimeout(resolve, 500));
       
+      // Vérifier qu'au moins une base de données a des identifiants saisis
+      const databasesWithCredentials = Object.keys(credentials).filter(db => {
+        const dbKey = db as keyof CredentialsStore;
+        return credentials[dbKey].username.trim() !== "" && credentials[dbKey].password.trim() !== "";
+      });
+      
+      if (databasesWithCredentials.length === 0) {
+        throw new Error("Veuillez saisir les identifiants pour au moins une base de données");
+      }
+      
+      console.log("Tentative de connexion avec les identifiants:", credentials);
+      
       // Tentative de connexion via le hook d'authentification
       const connectedDatabases = await login(credentials);
+      
+      console.log("Connexion réussie pour les bases de données:", connectedDatabases);
       
       toast({
         title: "Identifiants enregistrés",
@@ -88,10 +102,13 @@ const CredentialsForm = () => {
       
       // Utiliser setTimeout pour éviter les mises à jour d'état rapides qui peuvent causer des problèmes
       setTimeout(() => {
+        console.log("Redirection vers le dashboard...");
         navigate('/dashboard');
-      }, 800);
+      }, 1000);
       
     } catch (error) {
+      console.error("Erreur lors de la soumission:", error);
+      
       toast({
         title: "Erreur",
         description: error instanceof Error ? error.message : "Une erreur est survenue lors de l'enregistrement des identifiants",

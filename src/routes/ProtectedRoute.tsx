@@ -16,15 +16,17 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const location = useLocation();
   const hasShownError = useRef(false);
   
-  // Réinitialiser le flag d'erreur lors d'un changement de route
   useEffect(() => {
+    console.log("ProtectedRoute - État d'authentification:", isAuthenticated);
     return () => {
       hasShownError.current = false;
     };
-  }, [location.pathname]);
+  }, [location.pathname, isAuthenticated]);
   
   // Si l'utilisateur n'est pas authentifié, rediriger vers la page d'accueil avec un paramètre indiquant qu'il faut afficher le formulaire
   if (!isAuthenticated) {
+    console.log("Non authentifié, redirection vers la page d'accueil");
+    
     // Utilisation du système de gestion d'erreurs unifié (une seule fois par session)
     if (location.pathname !== '/' && !hasShownError.current) {
       hasShownError.current = true;
@@ -35,7 +37,7 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
           {
             type: ErrorType.AUTHENTICATION,
             showToast: true,
-            logToConsole: false
+            logToConsole: true
           }
         );
       }, 100);

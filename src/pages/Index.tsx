@@ -6,7 +6,6 @@ import CredentialsForm from '@/components/CredentialsForm';
 import { Button } from "@/components/ui/button";
 import { Search, Database, Shield, ArrowRight, Info } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
-import { AuthProvider } from '@/hooks/useAuth';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -121,9 +120,7 @@ const Index = () => {
           <div className={`w-full max-w-md mx-auto transition-all duration-1000 ${
             showAnimation ? 'opacity-0 transform translate-y-10' : 'opacity-100 transform translate-y-0'
           }`}>
-            <AuthProvider>
-              <CredentialsForm />
-            </AuthProvider>
+            <CredentialsForm />
           </div>
         )}
       </main>

@@ -12,13 +12,18 @@ class AuthController {
    * @returns {boolean} True si l'utilisateur est connecté
    */
   isAuthenticated(): boolean {
-    const credentials = getStoredCredentials();
-    if (!credentials) return false;
-    
-    // Vérifie si au moins une base de données a des identifiants
-    return Object.values(credentials).some((db: Record<string, string>) => 
-      db.username && db.password
-    );
+    try {
+      const credentials = getStoredCredentials();
+      if (!credentials) return false;
+      
+      // Vérifie si au moins une base de données a des identifiants
+      return Object.values(credentials).some((db: Record<string, string>) => 
+        db.username && db.password
+      );
+    } catch (error) {
+      console.error("Erreur lors de la vérification de l'authentification:", error);
+      return false;
+    }
   }
 
   /**
@@ -27,10 +32,15 @@ class AuthController {
    * @returns {boolean} True si l'utilisateur est connecté à cette base de données
    */
   isAuthenticatedFor(dbKey: keyof CredentialsStore): boolean {
-    const credentials = getStoredCredentials();
-    if (!credentials) return false;
-    
-    return !!(credentials[dbKey] && credentials[dbKey].username && credentials[dbKey].password);
+    try {
+      const credentials = getStoredCredentials();
+      if (!credentials) return false;
+      
+      return !!(credentials[dbKey] && credentials[dbKey].username && credentials[dbKey].password);
+    } catch (error) {
+      console.error(`Erreur lors de la vérification de l'authentification pour ${dbKey}:`, error);
+      return false;
+    }
   }
 
   /**
@@ -41,60 +51,27 @@ class AuthController {
    * @throws {Error} Si aucune base de données n'a d'identifiants
    */
   async login(credentials: CredentialsStore, options: AuthOptions = {}): Promise<string[]> {
+    console.log("Début de la fonction login dans authController");
+    
     // Vérifie que au moins une base de données a des identifiants
     const databasesWithCredentials = Object.keys(credentials).filter(db => {
       const dbKey = db as keyof CredentialsStore;
       return credentials[dbKey].username.trim() !== "" && credentials[dbKey].password.trim() !== "";
     });
     
+    console.log("Bases de données avec identifiants:", databasesWithCredentials);
+    
     if (databasesWithCredentials.length === 0) {
       throw new Error("Veuillez saisir les identifiants pour au moins une base de données");
     }
     
     try {
-      // En mode démonstration, on considère tous les identifiants comme valides
+      // Mode démonstration: on considère tous les identifiants comme valides
       // Sauvegarde les identifiants directement
       saveCredentials(credentials);
       
+      console.log("Identifiants sauvegardés avec succès");
       return databasesWithCredentials;
-      
-      /* Version originale avec vérification des identifiants - désactivée pour le mode démo
-      // Initialisation du navigateur pour la vérification
-      await credentialVerifier.initBrowser(options);
-      
-      // Vérification des identifiants pour chaque base de données
-      const connectedDatabases: string[] = [];
-      
-      for (const db of databasesWithCredentials) {
-        const dbKey = db as keyof CredentialsStore;
-        const dbCredentials = credentials[dbKey];
-        
-        try {
-          // Vérifie les identifiants selon la base de données
-          const result = await credentialVerifier.verifyCredentials(
-            dbKey, 
-            dbCredentials.username, 
-            dbCredentials.password
-          );
-          
-          if (result.isValid) {
-            connectedDatabases.push(db);
-          }
-        } catch (error) {
-          console.error(`Erreur lors de la vérification des identifiants pour ${db}:`, error);
-          // Continue avec les autres bases de données même si une échoue
-        }
-      }
-      
-      if (connectedDatabases.length === 0) {
-        throw new Error("Impossible de se connecter à une base de données avec les identifiants fournis");
-      }
-      
-      // Sauvegarde les identifiants
-      saveCredentials(credentials);
-      
-      return connectedDatabases;
-      */
     } catch (error) {
       console.error("Erreur lors de la connexion:", error);
       throw new Error("Une erreur est survenue lors de la connexion aux bases de données");
