@@ -19,6 +19,17 @@ class AuthController {
     }
   }
 
+  isAuthenticatedFor(dbKey: keyof CredentialsStore): boolean {
+    try {
+      const credentials = this.getStoredCredentials();
+      if (!credentials) return false;
+      return !!credentials[dbKey]?.username && !!credentials[dbKey]?.password;
+    } catch (error) {
+      handleError(error, { type: ErrorType.AUTHENTICATION });
+      return false;
+    }
+  }
+
   private getStoredCredentials(): CredentialsStore | null {
     return getSecurely<CredentialsStore>(AuthController.CREDENTIALS_KEY);
   }
@@ -46,6 +57,30 @@ class AuthController {
 
   logout(): void {
     removeSecurely(AuthController.CREDENTIALS_KEY);
+  }
+
+  logoutFrom(dbKey: keyof CredentialsStore): boolean {
+    try {
+      const credentials = this.getStoredCredentials();
+      if (!credentials) return false;
+      
+      // Check if user was authenticated for this database
+      if (!this.isAuthenticatedFor(dbKey)) return false;
+      
+      // Clear credentials for the specific database
+      credentials[dbKey] = {
+        ...credentials[dbKey],
+        username: '',
+        password: ''
+      };
+      
+      // Save the updated credentials
+      saveSecurely(AuthController.CREDENTIALS_KEY, credentials);
+      return true;
+    } catch (error) {
+      handleError(error, { type: ErrorType.AUTHENTICATION });
+      return false;
+    }
   }
 }
 

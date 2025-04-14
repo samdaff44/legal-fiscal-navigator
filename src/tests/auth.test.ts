@@ -81,7 +81,7 @@ describe('Auth Controller', () => {
     expect(sessionManager.endSession).toHaveBeenCalled();
   });
   
-  // Modifions ce test pour éviter d'utiliser getCredentials qui n'existe pas
+  // Test pour vérifier le fonctionnement de isAuthenticatedFor
   test('les identifiants stockés devraient être accessibles', () => {
     // Prépare les données
     const mockCredentials = {
@@ -89,8 +89,28 @@ describe('Auth Controller', () => {
     };
     localStorage.setItem('databaseCredentials', `encrypted_${JSON.stringify(mockCredentials)}`);
     
-    // Vérifie en utilisant isAuthenticatedFor plutôt que getCredentials
+    // Vérifie l'authentification pour des bases spécifiques
     expect(authController.isAuthenticatedFor('database1')).toBe(true);
     expect(authController.isAuthenticatedFor('database2')).toBe(false);
+  });
+  
+  // Test pour vérifier le fonctionnement de logoutFrom
+  test('logoutFrom devrait déconnecter une base de données spécifique', () => {
+    // Prépare les données
+    const mockCredentials = {
+      database1: { username: 'user1', password: 'pass1', url: 'url1' },
+      database2: { username: 'user2', password: 'pass2', url: 'url2' }
+    };
+    localStorage.setItem('databaseCredentials', `encrypted_${JSON.stringify(mockCredentials)}`);
+    
+    // Vérifie la déconnexion d'une base spécifique
+    expect(authController.logoutFrom('database1')).toBe(true);
+    
+    // Vérifie que seules les identifiants de la base spécifiée sont supprimés
+    const updatedCredentials = JSON.parse(localStorage.getItem('databaseCredentials')!.replace('encrypted_', ''));
+    expect(updatedCredentials.database1.username).toBe('');
+    expect(updatedCredentials.database1.password).toBe('');
+    expect(updatedCredentials.database2.username).toBe('user2');
+    expect(updatedCredentials.database2.password).toBe('pass2');
   });
 });
