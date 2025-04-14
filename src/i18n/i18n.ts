@@ -1,6 +1,7 @@
 
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
+import { InitOptions } from 'i18next';
 
 // Define translation resources
 const resources = {
@@ -25,18 +26,25 @@ const resources = {
 };
 
 // Initialize i18next with proper configuration
+const initOptions: InitOptions = {
+  resources,
+  lng: 'en',
+  interpolation: {
+    escapeValue: false
+  },
+  react: {
+    useSuspense: false
+  }
+};
+
+// The compatibilityJSON option needs to be handled differently as it's type-checked
+if (typeof window !== 'undefined') {
+  // Only add compatibility mode in browser environment
+  (initOptions as any).compatibilityJSON = 'v3';
+}
+
 i18n
   .use(initReactI18next)
-  .init({
-    resources,
-    lng: 'en',
-    interpolation: {
-      escapeValue: false
-    },
-    compatibilityJSON: 'v3', // Add compatibility option for older browsers
-    react: {
-      useSuspense: false
-    }
-  });
+  .init(initOptions);
 
 export default i18n;
