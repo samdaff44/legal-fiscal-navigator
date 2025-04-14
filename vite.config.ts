@@ -71,11 +71,14 @@ export default defineConfig(({ mode }) => ({
       'agent-base',
       'i18next',  // Add i18next to exclude list to avoid optimization issues
       'react-i18next',
+      'void-elements', // Add void-elements to the exclude list
+      'html-parse-stringify', // Add html-parse-stringify to the exclude list
     ],
     esbuildOptions: {
       define: {
         global: 'globalThis',
       },
+      // Add proper handling for CommonJS modules
       plugins: [
         {
           name: 'node-globals-polyfill',
