@@ -1,134 +1,52 @@
 
-import { CredentialsStore, saveCredentials, getStoredCredentials } from '../../models/Database';
-import { credentialVerifier } from './credentialVerifier';
-import { LoginResult, AuthOptions } from './types';
+import { saveSecurely, getSecurely, removeSecurely } from '@/utils/secureStorage';
+import { CredentialsStore } from '@/models/Database';
+import { handleError } from '@/utils/errorHandling/errorHandlers';
+import { ErrorType } from '@/utils/errorHandling/errorTypes';
 
-/**
- * Contrôleur pour la gestion de l'authentification
- */
 class AuthController {
-  /**
-   * Vérifie si l'utilisateur est connecté
-   * @returns {boolean} True si l'utilisateur est connecté
-   */
+  private static CREDENTIALS_KEY = 'databaseCredentials';
+
   isAuthenticated(): boolean {
     try {
-      const credentials = getStoredCredentials();
-      if (!credentials) return false;
-      
-      // Vérifie si au moins une base de données a des identifiants
-      return Object.values(credentials).some((db: Record<string, string>) => 
-        db.username && db.password
+      const credentials = this.getStoredCredentials();
+      return !!credentials && Object.values(credentials).some(
+        db => db.username && db.password
       );
     } catch (error) {
-      console.error("Erreur lors de la vérification de l'authentification:", error);
+      handleError(error, { type: ErrorType.AUTHENTICATION });
       return false;
     }
   }
 
-  /**
-   * Vérifie si l'utilisateur est connecté à une base de données spécifique
-   * @param {keyof CredentialsStore} dbKey - Clé de la base de données
-   * @returns {boolean} True si l'utilisateur est connecté à cette base de données
-   */
-  isAuthenticatedFor(dbKey: keyof CredentialsStore): boolean {
-    try {
-      const credentials = getStoredCredentials();
-      if (!credentials) return false;
-      
-      return !!(credentials[dbKey] && credentials[dbKey].username && credentials[dbKey].password);
-    } catch (error) {
-      console.error(`Erreur lors de la vérification de l'authentification pour ${dbKey}:`, error);
-      return false;
-    }
+  private getStoredCredentials(): CredentialsStore | null {
+    return getSecurely<CredentialsStore>(AuthController.CREDENTIALS_KEY);
   }
 
-  /**
-   * Connecte l'utilisateur en vérifiant et stockant ses identifiants
-   * @param {CredentialsStore} credentials - Identifiants des bases de données
-   * @param {AuthOptions} options - Options d'authentification
-   * @returns {Promise<string[]>} Liste des bases de données connectées
-   * @throws {Error} Si aucune base de données n'a d'identifiants
-   */
-  async login(credentials: CredentialsStore, options: AuthOptions = {}): Promise<string[]> {
-    console.log("Début de la fonction login dans authController");
-    
-    // Vérifie que au moins une base de données a des identifiants
-    const databasesWithCredentials = Object.keys(credentials).filter(db => {
-      const dbKey = db as keyof CredentialsStore;
-      return credentials[dbKey].username.trim() !== "" && credentials[dbKey].password.trim() !== "";
-    });
-    
-    console.log("Bases de données avec identifiants:", databasesWithCredentials);
-    
-    if (databasesWithCredentials.length === 0) {
-      throw new Error("Veuillez saisir les identifiants pour au moins une base de données");
-    }
-    
+  async login(credentials: CredentialsStore): Promise<string[]> {
     try {
-      // Mode démonstration: on considère tous les identifiants comme valides
-      // Sauvegarde les identifiants directement
-      saveCredentials(credentials);
-      
-      console.log("Identifiants sauvegardés avec succès");
-      return databasesWithCredentials;
-    } catch (error) {
-      console.error("Erreur lors de la connexion:", error);
-      throw new Error("Une erreur est survenue lors de la connexion aux bases de données");
-    } finally {
-      // Fermeture du navigateur
-      await credentialVerifier.closeBrowser();
-    }
-  }
+      const validDatabases = Object.keys(credentials).filter(
+        db => credentials[db].username.trim() && credentials[db].password.trim()
+      );
 
-  /**
-   * Déconnecte l'utilisateur en supprimant ses identifiants
-   */
-  logout(): void {
-    try {
-      localStorage.removeItem('databaseCredentials');
-    } catch (error) {
-      console.error("Erreur lors de la déconnexion:", error);
-    }
-  }
-
-  /**
-   * Déconnecte l'utilisateur d'une base de données spécifique
-   * @param {keyof CredentialsStore} dbKey - Clé de la base de données
-   * @returns {boolean} True si la déconnexion a réussi
-   */
-  logoutFrom(dbKey: keyof CredentialsStore): boolean {
-    try {
-      const credentials = getStoredCredentials();
-      if (!credentials) return false;
-      
-      if (credentials[dbKey]) {
-        credentials[dbKey] = { username: "", password: "", url: credentials[dbKey].url };
-        
-        // Vérifie s'il reste des bases de données connectées
-        const remainingDatabases = Object.keys(credentials).filter(db => {
-          const dbK = db as keyof CredentialsStore;
-          return credentials[dbK].username && credentials[dbK].password;
-        });
-        
-        if (remainingDatabases.length === 0) {
-          // Si aucune base de données n'est connectée, déconnexion complète
-          localStorage.removeItem('databaseCredentials');
-        } else {
-          // Sinon, sauvegarde les identifiants mis à jour
-          saveCredentials(credentials);
-        }
-        
-        return true;
+      if (validDatabases.length === 0) {
+        throw new Error("Please provide credentials for at least one database");
       }
-      
-      return false;
+
+      saveSecurely(AuthController.CREDENTIALS_KEY, credentials);
+      return validDatabases;
     } catch (error) {
-      console.error(`Erreur lors de la déconnexion de ${dbKey}:`, error);
-      return false;
+      handleError(error, { 
+        type: ErrorType.AUTHENTICATION, 
+        showToast: true 
+      });
+      throw error;
     }
+  }
+
+  logout(): void {
+    removeSecurely(AuthController.CREDENTIALS_KEY);
   }
 }
 
-// Export une instance unique (singleton) du contrôleur
 export const authController = new AuthController();
