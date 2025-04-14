@@ -68,7 +68,9 @@ export default defineConfig(({ mode }) => ({
       'https-proxy-agent', 
       'socks-proxy-agent', 
       'pac-proxy-agent', 
-      'agent-base'
+      'agent-base',
+      'i18next',  // Add i18next to exclude list to avoid optimization issues
+      'react-i18next',
     ],
     esbuildOptions: {
       define: {
