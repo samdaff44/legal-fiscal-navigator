@@ -33,6 +33,7 @@ i18n
     interpolation: {
       escapeValue: false
     },
+    compatibilityJSON: 'v3', // Add compatibility option for older browsers
     react: {
       useSuspense: false
     }
