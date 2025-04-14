@@ -27,6 +27,10 @@ export default defineConfig(({ mode }) => ({
   },
   // Optimizations for build
   build: {
+    commonjsOptions: {
+      transformMixedEsModules: true, // Add this to handle mixed ES/CommonJS modules
+      include: [/node_modules/]
+    },
     rollupOptions: {
       // Externalize all server-only dependencies
       external: [
@@ -60,6 +64,7 @@ export default defineConfig(({ mode }) => ({
   },
   // Properly handling Node.js built-ins
   optimizeDeps: {
+    include: ['i18next', 'react-i18next'],
     exclude: [
       'puppeteer', 
       'proxy-agent', 
@@ -69,10 +74,8 @@ export default defineConfig(({ mode }) => ({
       'socks-proxy-agent', 
       'pac-proxy-agent', 
       'agent-base',
-      'i18next',  // Add i18next to exclude list to avoid optimization issues
-      'react-i18next',
-      'void-elements', // Add void-elements to the exclude list
-      'html-parse-stringify', // Add html-parse-stringify to the exclude list
+      'void-elements', 
+      'html-parse-stringify'
     ],
     esbuildOptions: {
       define: {
@@ -91,6 +94,11 @@ export default defineConfig(({ mode }) => ({
             // Block any imports from node_modules that include these patterns
             build.onResolve({ filter: /node_modules\/(puppeteer|proxy-agent|@puppeteer\/browsers|http-proxy-agent|https-proxy-agent|socks-proxy-agent|pac-proxy-agent|agent-base)/ }, () => {
               return { external: true, path: 'empty-module' };
+            });
+
+            // Custom resolver for CommonJS modules
+            build.onResolve({ filter: /^(void-elements|html-parse-stringify)/ }, (args) => {
+              return { path: args.path, namespace: 'file' };
             });
           },
         },

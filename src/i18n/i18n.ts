@@ -24,15 +24,18 @@ const resources = {
   }
 };
 
-// Initialize i18next
+// Initialize i18next with simplified configuration
 i18n
   .use(initReactI18next) // passes i18n down to react-i18next
   .init({
     resources,
-    lng: 'fr', // default language
-    fallbackLng: 'en',
+    lng: 'en', // change to English as default language
     interpolation: {
       escapeValue: false // react already safes from xss
+    },
+    compatibilityJSON: 'v3', // Add compatibility option
+    react: {
+      useSuspense: false // disable suspense for compatibility
     }
   });
 
