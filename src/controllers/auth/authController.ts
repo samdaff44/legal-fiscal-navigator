@@ -3,6 +3,7 @@ import { saveSecurely, getSecurely, removeSecurely } from '@/utils/secureStorage
 import { CredentialsStore } from '@/models/Database';
 import { handleError } from '@/utils/errorHandling/errorHandlers';
 import { ErrorType } from '@/utils/errorHandling/errorTypes';
+import { credentialVerifier } from './credentialVerifier';
 
 class AuthController {
   private static CREDENTIALS_KEY = 'databaseCredentials';
@@ -34,6 +35,24 @@ class AuthController {
     return getSecurely<CredentialsStore>(AuthController.CREDENTIALS_KEY);
   }
 
+  /**
+   * Vérifie directement les identifiants avec le site concerné
+   */
+  async verifyCredentials(dbKey: keyof CredentialsStore, username: string, password: string): Promise<boolean> {
+    try {
+      console.log(`Vérification des identifiants pour ${dbKey}...`);
+      const result = await credentialVerifier.verifyCredentials(dbKey, username, password);
+      console.log(`Résultat de vérification pour ${dbKey}:`, result);
+      return result.isValid;
+    } catch (error) {
+      handleError(error, { 
+        type: ErrorType.AUTHENTICATION,
+        showToast: false
+      });
+      return false;
+    }
+  }
+
   async login(credentials: CredentialsStore): Promise<string[]> {
     try {
       const validDatabases = Object.keys(credentials).filter(
@@ -41,7 +60,7 @@ class AuthController {
       );
 
       if (validDatabases.length === 0) {
-        throw new Error("Please provide credentials for at least one database");
+        throw new Error("Veuillez fournir les identifiants pour au moins une base de données");
       }
 
       saveSecurely(AuthController.CREDENTIALS_KEY, credentials);
