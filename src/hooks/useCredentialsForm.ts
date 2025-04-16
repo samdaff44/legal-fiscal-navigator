@@ -13,7 +13,7 @@ export const useCredentialsForm = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { login } = useAuth();
-  const { isVerifying, verificationStatus, verifyDatabaseCredentials } = useCredentialVerification();
+  const { isVerifying, verificationStatus, verifyDatabaseCredentials, setVerificationStatus } = useCredentialVerification();
   const [activeDatabase, setActiveDatabase] = useState<keyof CredentialsStore>("database1");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [credentials, setCredentials] = useState<CredentialsStore>({
